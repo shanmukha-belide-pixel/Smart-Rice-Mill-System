@@ -92,7 +92,3 @@ Test these inputs directly in the simulated console screen:
 * `STOP` - Cancel your active ticket and opt-out of alerts.
 
 ---
-
-## 📦 Zip Codebase Export
-For portability, a compiled ZIP version of this repository is located at:
-* [Sri_Trimula_Rice_Mill_App.zip](./Sri_Trimula_Rice_Mill_App.zip)
