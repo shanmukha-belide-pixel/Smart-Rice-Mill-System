@@ -90,9 +90,16 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
     }
   };
 
-  // Connect WebSockets for live sync
+  // Connect WebSockets and Storage events for live sync
   useEffect(() => {
     fetchData();
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'ricemill_tokens' || e.key === 'ricemill_stock') {
+        fetchData();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
 
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const cleanHost = backendUrl.replace('http://', '').replace('https://', '');
@@ -111,6 +118,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
     
     connect();
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       if (socket) socket.close();
     };
   }, [backendUrl]);

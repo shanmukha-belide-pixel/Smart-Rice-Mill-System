@@ -348,9 +348,7 @@ export default function App() {
 
   // Role permissions checking
   const canAccessTab = (tab) => {
-    if (role === 'owner') return true;
-    if (role === 'staff' && tab === 'dashboard') return true;
-    if (role === 'accountant' && tab === 'reports') return true;
+    if (role === 'owner' || role === 'staff' || role === 'accountant') return true;
     return false;
   };
 

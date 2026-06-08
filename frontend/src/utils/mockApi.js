@@ -90,7 +90,12 @@ const pushToCloud = async () => {
 // Pull state from cloud JSON bin on boot safely
 const pullFromCloud = async () => {
   try {
-    const res = await fetch(BIN_URL);
+    const res = await fetch(`${BIN_URL}?nocache=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     if (res.ok) {
       const state = await res.json();
       // If server returned status (wrapped) or raw data
@@ -235,13 +240,32 @@ const setupMockApi = () => {
       // 1. Auth Endpoint
       if (path === '/api/auth/login') {
         const body = JSON.parse(init.body);
-        if (body.username === 'Shanmukha' && body.password === 'Shanmukha29*') {
-          return makeResponse({
-            access_token: 'mock_jwt_token_for_shanmukha',
-            token_type: 'bearer',
-            role: 'owner',
-            full_name: 'Shanmukha'
-          });
+        const username = body.username ? body.username.trim().toLowerCase() : '';
+        const password = body.password ? body.password.trim() : '';
+        
+        if (password === 'Shanmukha29*') {
+          if (username === 'owner' || username === 'shanmukha') {
+            return makeResponse({
+              access_token: 'mock_jwt_token_for_owner',
+              token_type: 'bearer',
+              role: 'owner',
+              full_name: 'Shanmukha'
+            });
+          } else if (username === 'staff') {
+            return makeResponse({
+              access_token: 'mock_jwt_token_for_staff',
+              token_type: 'bearer',
+              role: 'staff',
+              full_name: 'Staff User'
+            });
+          } else if (username === 'accountant') {
+            return makeResponse({
+              access_token: 'mock_jwt_token_for_accountant',
+              token_type: 'bearer',
+              role: 'accountant',
+              full_name: 'Accountant User'
+            });
+          }
         }
         return makeResponse({ detail: 'Invalid username or password' }, 401);
       }
@@ -522,8 +546,14 @@ const setupMockApi = () => {
             const itemIdx = stock.findIndex(s => s.variety_name === body.variety_name);
             
             const reqQty = parseFloat(body.quantity_kg) || 0;
-            const reqPrice = parseFloat(body.price_per_kg) || 0;
-            const reqTotal = parseFloat(body.total_price) || 0;
+            let reqPrice = parseFloat(body.price_per_kg) || 0;
+            if (!reqPrice && itemIdx !== -1) {
+              reqPrice = parseFloat(stock[itemIdx].price_per_kg) || 0;
+            }
+            let reqTotal = parseFloat(body.total_price) || 0;
+            if (!reqTotal) {
+              reqTotal = reqQty * reqPrice;
+            }
 
             if (itemIdx !== -1) {
               const currentStockQty = parseFloat(stock[itemIdx].quantity_kg) || 0;
@@ -611,20 +641,24 @@ const setupMockApi = () => {
       if (path === '/api/reports/daily') {
         const sales = getDB('ricemill_sales');
         const tokens = getDB('ricemill_tokens');
+        const todayStr = new Date().toDateString();
 
-        const served = tokens.filter(t => t.status === 'served').length;
-        const noShows = tokens.filter(t => t.status === 'no_show').length;
-        const totalRevenue = sales.reduce((sum, s) => sum + (parseFloat(s.total_price) || 0), 0);
+        // Filter to only count items created/saved today
+        const todayTokens = tokens.filter(t => new Date(t.created_at || new Date()).toDateString() === todayStr);
+        const todaySales = sales.filter(s => new Date(s.created_at || new Date()).toDateString() === todayStr);
+
+        const served = todayTokens.filter(t => t.status === 'served').length;
+        const noShows = todayTokens.filter(t => t.status === 'no_show').length;
+        const totalRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.total_price) || 0), 0);
 
         const stockConsumed = {};
-        sales.forEach(s => {
+        todaySales.forEach(s => {
           const qty = parseFloat(s.quantity_kg) || 0;
           stockConsumed[s.variety_name] = (stockConsumed[s.variety_name] || 0) + qty;
         });
 
-        // CRITICAL: Calculate payment breakdown dynamically to prevent .payment_breakdown undefined crashes!
         const paymentBreakdown = { Cash: 0, UPI: 0, Credit: 0 };
-        sales.forEach(s => {
+        todaySales.forEach(s => {
           const mode = s.payment_mode || 'Cash';
           const amt = parseFloat(s.total_price) || 0;
           paymentBreakdown[mode] = (paymentBreakdown[mode] || 0) + amt;
@@ -634,7 +668,7 @@ const setupMockApi = () => {
           date: new Date().toLocaleDateString('en-IN'),
           tokens_served: served,
           no_shows: noShows,
-          no_show_rate: tokens.length ? (noShows / tokens.length * 100) : 0.0,
+          no_show_rate: todayTokens.length ? (noShows / todayTokens.length * 100) : 0.0,
           total_revenue: totalRevenue,
           payment_breakdown: paymentBreakdown,
           stock_consumed: stockConsumed
@@ -644,81 +678,61 @@ const setupMockApi = () => {
       if (path === '/api/reports/trends') {
         const sales = getDB('ricemill_sales');
         
-        if (sales.length > 0) {
-          // 1. Group sales by day label
-          const salesByDate = {};
-          sales.forEach(s => {
-            const d = new Date(s.created_at || new Date());
-            const dateStr = d.toLocaleDateString('en-IN');
-            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. Mon, Tue
-            if (!salesByDate[dateStr]) {
-              salesByDate[dateStr] = { day: dayName, revenue: 0, tokens: 0, dateObj: d };
-            }
-            salesByDate[dateStr].revenue += parseFloat(s.total_price) || 0;
-            salesByDate[dateStr].tokens += 1;
+        // 1. Generate the last 7 calendar days dynamically
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const weekly_revenue = [];
+        const today = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(today.getDate() - i);
+          
+          const dayName = daysOfWeek[d.getDay()];
+          const dateStr = d.toLocaleDateString('en-IN');
+          
+          // Find real sales in DB for this day
+          const daySales = sales.filter(s => {
+            const saleDate = new Date(s.created_at || new Date());
+            return saleDate.toDateString() === d.toDateString();
           });
 
-          const sortedDates = Object.keys(salesByDate).sort((a, b) => salesByDate[a].dateObj - salesByDate[b].dateObj);
-          const weekly_revenue = sortedDates.slice(-7).map(dateStr => ({
-            day: salesByDate[dateStr].day,
-            revenue: salesByDate[dateStr].revenue,
-            tokens: salesByDate[dateStr].tokens
-          }));
+          const revenue = daySales.reduce((sum, s) => sum + (parseFloat(s.total_price) || 0), 0);
+          const tokens = daySales.length;
 
-          // 2. Aggregate peak hours dynamically
-          const time_blocks = {
-            "06-08 AM": 0, "08-10 AM": 0, "10-12 PM": 0, "12-02 PM": 0,
-            "02-04 PM": 0, "04-06 PM": 0, "06-08 PM": 0
-          };
-          sales.forEach(s => {
-            const d = new Date(s.created_at || new Date());
-            const h = d.getHours();
-            if (6 <= h && h < 8) time_blocks["06-08 AM"] += 1;
-            else if (8 <= h && h < 10) time_blocks["08-10 AM"] += 1;
-            else if (10 <= h && h < 12) time_blocks["10-12 PM"] += 1;
-            else if (12 <= h && h < 14) time_blocks["12-02 PM"] += 1;
-            else if (14 <= h && h < 16) time_blocks["02-04 PM"] += 1;
-            else if (16 <= h && h < 18) time_blocks["04-06 PM"] += 1;
-            else if (18 <= h && h < 20) time_blocks["06-08 PM"] += 1;
+          weekly_revenue.push({
+            day: dayName,
+            revenue: revenue,
+            tokens: tokens,
+            date: dateStr
           });
-          const peak_hours = Object.entries(time_blocks).map(([hour, count]) => ({ hour, count }));
-
-          // 3. Aggregate variety splits dynamically
-          const variety_sales = {};
-          sales.forEach(s => {
-            variety_sales[s.variety_name] = (variety_sales[s.variety_name] || 0) + (parseFloat(s.quantity_kg) || 0);
-          });
-          const varieties_split = Object.entries(variety_sales).map(([name, value]) => ({ name, value }));
-
-          return makeResponse({ weekly_revenue, peak_hours, varieties_split });
         }
 
-        // Fallback demo values if no sales recorded
-        return makeResponse({
-          weekly_revenue: [
-            {"day": "Mon", "revenue": 12400, "tokens": 98},
-            {"day": "Tue", "revenue": 14500, "tokens": 112},
-            {"day": "Wed", "revenue": 11200, "tokens": 85},
-            {"day": "Thu", "revenue": 16800, "tokens": 130},
-            {"day": "Fri", "revenue": 18450, "tokens": 142},
-            {"day": "Sat", "revenue": 19200, "tokens": 150},
-            {"day": "Sun", "revenue": 0, "tokens": 0}
-          ],
-          peak_hours: [
-            {"hour": "06-08 AM", "count": 15},
-            {"hour": "08-10 AM", "count": 45},
-            {"hour": "10-12 PM", "count": 68},
-            {"hour": "12-02 PM", "count": 28},
-            {"hour": "02-04 PM", "count": 12},
-            {"hour": "04-06 PM", "count": 35},
-            {"hour": "06-08 PM", "count": 52}
-          ],
-          varieties_split: [
-            {"name": "Basmati", "value": 150},
-            {"name": "Sona Masuri", "value": 200},
-            {"name": "Sharbati", "value": 35}
-          ]
+        // 2. Aggregate peak hours dynamically from actual sales
+        const time_blocks = {
+          "06-08 AM": 0, "08-10 AM": 0, "10-12 PM": 0, "12-02 PM": 0,
+          "02-04 PM": 0, "04-06 PM": 0, "06-08 PM": 0
+        };
+        sales.forEach(s => {
+          const saleDate = new Date(s.created_at || new Date());
+          const h = saleDate.getHours();
+          if (6 <= h && h < 8) time_blocks["06-08 AM"] += 1;
+          else if (8 <= h && h < 10) time_blocks["08-10 AM"] += 1;
+          else if (10 <= h && h < 12) time_blocks["10-12 PM"] += 1;
+          else if (12 <= h && h < 14) time_blocks["12-02 PM"] += 1;
+          else if (14 <= h && h < 16) time_blocks["02-04 PM"] += 1;
+          else if (16 <= h && h < 18) time_blocks["04-06 PM"] += 1;
+          else if (18 <= h && h < 20) time_blocks["06-08 PM"] += 1;
         });
+        const peak_hours = Object.entries(time_blocks).map(([hour, count]) => ({ hour, count }));
+
+        // 3. Aggregate variety splits dynamically from actual sales
+        const variety_sales = {};
+        sales.forEach(s => {
+          variety_sales[s.variety_name] = (variety_sales[s.variety_name] || 0) + (parseFloat(s.quantity_kg) || 0);
+        });
+        const varieties_split = Object.entries(variety_sales).map(([name, value]) => ({ name, value }));
+
+        return makeResponse({ weekly_revenue, peak_hours, varieties_split });
       }
 
       if (path === '/api/reports/weekly' || path === '/api/reports/monthly') {

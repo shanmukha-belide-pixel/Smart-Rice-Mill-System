@@ -39,6 +39,13 @@ export default function StockManagement({ backendUrl, userToken, language }) {
   useEffect(() => {
     fetchStock();
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'ricemill_stock') {
+        fetchStock();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const cleanHost = backendUrl.replace('http://', '').replace('https://', '');
     const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
@@ -56,6 +63,7 @@ export default function StockManagement({ backendUrl, userToken, language }) {
     
     connect();
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       if (socket) socket.close();
     };
   }, [backendUrl]);

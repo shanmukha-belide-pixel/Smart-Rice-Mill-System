@@ -35,6 +35,13 @@ export default function Reports({ backendUrl, userToken, language }) {
   useEffect(() => {
     fetchReports();
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'ricemill_sales' || e.key === 'ricemill_tokens') {
+        fetchReports();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const cleanHost = backendUrl.replace('http://', '').replace('https://', '');
     const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
@@ -52,6 +59,7 @@ export default function Reports({ backendUrl, userToken, language }) {
     
     connect();
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       if (socket) socket.close();
     };
   }, [backendUrl]);
