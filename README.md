@@ -4,6 +4,8 @@ A modern, high-performance Queue & Inventory Management system custom-tailored f
 
 Designed to optimize customer throughput, automate rice stock levels, handle bilingual operations, and generate instant printable receipts.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shanmukha-belide-pixel/Smart-Rice-Mill-System)
+
 ---
 
 ## ✨ Key Features
@@ -76,10 +78,10 @@ Navigate to the `/frontend` directory:
 
 ## 🔑 Default Credentials
 
-Sign in with these preset administrative roles:
-* **Owner Dashboard:** `owner` / `owner123`
-* **Staff Console:** `staff` / `staff123`
-* **Accountant Reports:** `accountant` / `account123`
+Sign in with the custom administrative owner account:
+* **Owner/Administrator Dashboard:**
+  * **Username:** `Shanmukha`
+  * **Password:** `Shanmukha29*`
 
 ---
 
