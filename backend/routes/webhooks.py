@@ -2,7 +2,7 @@ import datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Response
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models import Token, Stock, Sale
+from backend.models import Token, Stock, Sale, SystemSetting
 from backend.services.sms_service import SMSService
 from typing import Optional
 
@@ -33,11 +33,20 @@ def calculate_estimated_wait_time(db: Session, position: int) -> int:
     avg_service_time = max(3.0, min(20.0, avg_service_time))
     return int(position * avg_service_time)
 
-async def register_customer_token(db: Session, phone_number: str, priority: bool = False, priority_reason: str = None) -> Token:
+async def register_customer_token(db: Session, phone_number: str, priority: bool = False, priority_reason: str = None) -> Optional[Token]:
     """
     Core token registration logic.
     Checks if token already exists for the caller today.
     """
+    # Check if holiday mode is enabled
+    settings = db.query(SystemSetting).first()
+    if settings and settings.holiday_mode:
+        telugu = "ఈరోజు మిల్లుకు సెలవు. రేపు ఉదయం 6 గంటలకు తెరవబడుతుంది."
+        english = f"Closed today. Open tomorrow 6 AM. - {settings.mill_name}"
+        sms_text = f"{telugu}\n\n{english}"
+        await SMSService.send_sms(phone_number, sms_text)
+        return None
+
     today = datetime.date.today()
     start_of_day = datetime.datetime.combine(today, datetime.time.min)
     
@@ -128,18 +137,25 @@ async def handle_incoming_sms(
     if cmd in ["TOKEN", "HI", "HELLO"]:
         # Register a new token
         token = await register_customer_token(db, phone)
+        if token is None:
+            return Response(content="Closed today", media_type="text/plain")
         # Note: register_customer_token sends its own SMS, so we return empty/generic response or specific body
         return Response(content="Token registered", media_type="text/plain")
         
     elif cmd == "PRICE":
         # Fetch prices of all varieties
         items = db.query(Stock).all()
+        settings = db.query(SystemSetting).first()
+        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
         if not items:
-            reply = "Today's Prices @ Sri Trimula Rice Mill:\nNo prices listed today. Open 6 AM."
+            reply = f"Today's Prices @ {mill_name}:\nNo prices listed today. Open 6 AM."
         else:
-            lines = [f"{item.variety_name}: ₹{item.price_per_kg:.1f}/kg" for item in items]
-            total_stock_bags = sum(item.quantity_kg for item in items) / 10.0 # e.g. 10kg bags
-            reply = f"Today's Prices @ Sri Trimula Rice Mill:\n" + "\n".join(lines) + f"\nStock Status: Available"
+            price_pairs = [f"{item.variety_name}: ₹{item.price_per_kg:.0f}/kg" for item in items]
+            total_stock_kg = sum(item.quantity_kg for item in items)
+            total_bags = total_stock_kg / 10.0
+            
+            # Combined message formatted under 160 characters
+            reply = f"Today's Prices @ {mill_name}:\n" + " | ".join(price_pairs) + f"\nTotal Stock: {total_stock_kg:.0f}kg ({total_bags:.0f} bags)"
             
         await SMSService.send_sms(phone, reply)
         return Response(content="Prices sent", media_type="text/plain")
@@ -152,26 +168,26 @@ async def handle_incoming_sms(
             Token.status.in_(["waiting", "active"])
         ).first()
         
+        settings = db.query(SystemSetting).first()
+        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        
         if not token:
-            reply = "You do not have an active token today. SMS 'TOKEN' or give a missed call to register."
+            reply = f"You do not have an active token today. SMS 'TOKEN' or give a missed call to register."
         elif token.status == "active":
             reply = f"Your token {token.token_number} is ACTIVE! Please proceed to {token.counter_assigned or 'Counter 1'} immediately."
         else:
-            # Calculate position
-            # Count how many waiting tokens have been created before this token
             ahead = db.query(Token).filter(
                 Token.status == "waiting",
                 Token.created_at >= start_of_day,
                 Token.created_at < token.created_at
             ).count()
             wait = calculate_estimated_wait_time(db, ahead + 1)
-            reply = f"Token {token.token_number}: {ahead} people ahead. Est. wait time: ~{wait} mins. - Sri Trimula Rice Mill"
+            reply = f"Token {token.token_number}: {ahead} ahead. Est. wait: ~{wait} mins. - {mill_name}"
             
         await SMSService.send_sms(phone, reply)
         return Response(content="Status sent", media_type="text/plain")
         
     elif cmd == "STOP":
-        # Opt-out logic (simply delete or cancel active tokens)
         tokens = db.query(Token).filter(
             Token.phone_number == phone,
             Token.created_at >= start_of_day,
@@ -181,15 +197,19 @@ async def handle_incoming_sms(
             t.status = "expired"
         db.commit()
         
-        # Live broadcast to all active dashboards to clear expired tokens
+        settings = db.query(SystemSetting).first()
+        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        
         from backend.main_shared import broadcast_queue_update
         await broadcast_queue_update()
         
-        reply = "You have been unsubscribed. Active tokens canceled. Sri Trimula Rice Mill."
+        reply = f"You have been unsubscribed. Active tokens canceled. {mill_name}."
         await SMSService.send_sms(phone, reply)
         return Response(content="Opt-out processed", media_type="text/plain")
         
     else:
-        reply = "Invalid command. Supported: 'TOKEN' (register), 'PRICE' (rates), 'STATUS' (position), 'STOP' (cancel)."
+        settings = db.query(SystemSetting).first()
+        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        reply = f"Invalid command. Supported: 'TOKEN' (register), 'PRICE' (rates), 'STATUS' (position), 'STOP' (cancel). - {mill_name}"
         await SMSService.send_sms(phone, reply)
         return Response(content="Help sent", media_type="text/plain")

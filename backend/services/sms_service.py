@@ -2,6 +2,7 @@ import os
 import logging
 import requests
 from typing import Dict, List
+from backend.database import get_db
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -92,42 +93,60 @@ class SMSService:
         return True
 
     @staticmethod
+    def get_mill_name() -> str:
+        try:
+            db = next(get_db())
+            from backend.models import SystemSetting
+            settings = db.query(SystemSetting).first()
+            if settings:
+                return settings.mill_name
+        except Exception:
+            pass
+        return "Sri Trimula Rice Mill"
+
+    @staticmethod
     def get_token_sms_text(token_number: str, position: int, wait_time: int) -> str:
         """
         Creates Telugu + English SMS body. Formatted to fit under 160 characters.
         """
+        mill = SMSService.get_mill_name()
         # Telugu (approx 75 chars) + English (approx 75 chars)
-        telugu = f"నమస్కారం! మీ టోకెన్ {token_number}.\n{position} మంది ముందున్నారు. సమయం ~{wait_time} ని. - Sri Trimula Rice Mill"
-        english = f"Hello! Token {token_number}.\n{position} ahead. Wait ~{wait_time} mins. - Sri Trimula Rice Mill"
+        telugu = f"నమస్కారం! మీ టోకెన్ {token_number}.\n{position} మంది ముందున్నారు. సమయం ~{wait_time} ని. - {mill}"
+        english = f"Hello! Token {token_number}.\n{position} ahead. Wait ~{wait_time} mins. - {mill}"
         return f"{telugu}\n\n{english}"
 
     @staticmethod
     def get_2_away_sms_text(token_number: str, wait_time: int) -> str:
+        mill = SMSService.get_mill_name()
         telugu = f"మీ టోకెన్ {token_number} కౌంటర్ కి దగ్గరగా ఉంది. 2 మంది ముందున్నారు (~{wait_time} ని). సిద్ధంగా ఉండండి."
-        english = f"Token {token_number} is close. 2 people ahead (~{wait_time} mins). Please get ready."
+        english = f"Token {token_number} is close. 2 people ahead (~{wait_time} mins). Please get ready. - {mill}"
         return f"{telugu}\n\n{english}"
 
     @staticmethod
     def get_active_sms_text(token_number: str, counter: str) -> str:
+        mill = SMSService.get_mill_name()
         telugu = f"టోకెన్ {token_number} యాక్టివ్ అయింది! దయచేసి వెంటనే {counter} కి వెళ్ళండి."
-        english = f"Token {token_number} is NOW ACTIVE! Please proceed to {counter} immediately."
+        english = f"Token {token_number} is NOW ACTIVE! Proceed to {counter} immediately. - {mill}"
         return f"{telugu}\n\n{english}"
 
     @staticmethod
     def get_served_sms_text(token_number: str, total_price: float) -> str:
+        mill = SMSService.get_mill_name()
         telugu = f"టోకెన్ {token_number} పూర్తయింది. ధన్యవాదాలు! మొత్తం బిల్లు: ₹{total_price:.2f}."
-        english = f"Token {token_number} served. Thank you! Total bill: ₹{total_price:.2f}."
+        english = f"Token {token_number} served. Thank you! Total: ₹{total_price:.2f}. - {mill}"
         return f"{telugu}\n\n{english}"
 
     @staticmethod
     def get_noshow_sms_text(token_number: str) -> str:
-        telugu = f"టోకెన్ {token_number}: నొ-షో (హాజరు కాలేదు). మీ టోకెన్ రద్దు చేయబడింది."
-        english = f"Token {token_number}: No-show recorded. Token expired."
+        mill = SMSService.get_mill_name()
+        telugu = f"టోకెన్ {token_number}: హాజరు కాలేదు. మీ టోకెన్ రద్దు చేయబడింది."
+        english = f"Token {token_number}: No-show recorded. Token expired. - {mill}"
         return f"{telugu}\n\n{english}"
 
     @staticmethod
     def get_low_stock_sms_text(variety_name: str, quantity: float, threshold: float) -> str:
-        return f"⚠️ Sri Trimula Mill Stock Alert:\n{variety_name} low: {quantity:.1f} kg (Threshold: {threshold:.1f} kg). Auto-suggest reorder: 500 kg."
+        mill = SMSService.get_mill_name()
+        return f"⚠️ {mill} Stock Alert:\n{variety_name} low: {quantity:.1f} kg (Threshold: {threshold:.1f} kg). Reorder: 500 kg."
 
 def datetime_now_str() -> str:
     import datetime

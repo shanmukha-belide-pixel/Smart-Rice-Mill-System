@@ -133,6 +133,20 @@ export const translations = {
     receiptDateTime: "తేదీ & సమయం",
     // Common
     welcome: "స్వాగతం",
+    // Settings translations
+    settings: "సెట్టింగులు",
+    millNameSetting: "మిల్లు పేరు",
+    virtualNumberSetting: "వర్చువల్ సంఖ్య",
+    holidayModeSetting: "సెలవు దినం (హాలిడే మోడ్)",
+    smsGatewaySetting: "SMS గేట్‌వే యాక్టివ్",
+    avgServiceTimeSetting: "సగటు సేవ సమయం (నిమిషాలు)",
+    saveSettings: "సెట్టింగులను సేవ్ చేయి",
+    queueHoldSetting: "క్యూ తాత్కాలిక నిలిపివేత (హోల్డ్ క్యూ)",
+    priceHistoryLog: "ధర మార్పుల చరిత్ర",
+    staffAlerts: "సిబ్బంది నోటిఫికేషన్లు",
+    lockedAccounts: "లాక్ చేయబడిన ఖాతాలు",
+    simulatedDailySms: "యజమాని రోజువారీ SMS నివేదిక (రాత్రి 10 గంటల సమయం)",
+    reorderQtySuggest: "ఆటో రి ఆర్డర్ సలహా: 500 కిలోలు",
   },
   en: {
     appName: "Sri Trimula Rice Mill",
@@ -268,5 +282,19 @@ export const translations = {
     receiptDateTime: "Date & Time",
     // Common
     welcome: "Welcome",
+    // Settings translations
+    settings: "Settings",
+    millNameSetting: "Mill Name",
+    virtualNumberSetting: "Virtual Phone Number",
+    holidayModeSetting: "Holiday Mode (Closed Today)",
+    smsGatewaySetting: "SMS Gateway Active",
+    avgServiceTimeSetting: "Avg Service Time (mins)",
+    saveSettings: "Save Settings",
+    queueHoldSetting: "Hold/Pause Queue Operations",
+    priceHistoryLog: "Price Change History Logs",
+    staffAlerts: "Staff Activity Notifications",
+    lockedAccounts: "Locked Accounts",
+    simulatedDailySms: "Daily SMS Summary to Owner (10 PM IST)",
+    reorderQtySuggest: "Auto-suggest reorder quantity: 500 kg",
   }
 };

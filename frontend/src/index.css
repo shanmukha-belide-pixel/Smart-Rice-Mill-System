@@ -34,30 +34,88 @@ body {
 
 /* Glassmorphism Styles */
 .glass-panel {
-  background: rgba(30, 41, 59, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 15, 26, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03);
+}
+
+.glass-panel-glow {
+  background: rgba(10, 15, 26, 0.55);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  box-shadow: 
+    0 10px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 15px -3px rgba(16, 185, 129, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 
 .glass-input {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(8, 12, 21, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-input:focus {
-  border-color: hsl(142, 72%, 29%);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 
+    0 0 0 3px rgba(16, 185, 129, 0.15),
+    inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  background: rgba(8, 12, 21, 0.85);
 }
 
 /* Animations and Hover Micro-effects */
 .hover-scale {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .hover-scale:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+  transform: translateY(-4px) scale(1.008);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.6),
+    0 10px 10px -5px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.hover-glow-emerald:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 
+    0 0 20px -3px rgba(16, 185, 129, 0.15),
+    0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* Background floating blur animation */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
+}
+
+.animate-float {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* Scanner HUD laser line animation */
+@keyframes laser-sweep {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.animate-laser {
+  animation: laser-sweep 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(135deg, #34d399 0%, #059669 100%);
 }
 
 /* Custom scrollbar for queue list */

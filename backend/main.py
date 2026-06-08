@@ -1,15 +1,19 @@
 import os
 import datetime
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+import asyncio
+import csv
+import io
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Dict, Set
 
 from backend.database import engine, Base, get_db
-from backend.models import User, Token, Stock, Sale, PriceHistory
-from backend.schemas import UserCreate, UserLogin, TokenAuth, StockCreate, StockUpdate, StockResponse, TokenResponse, TokenCallNext, SaleCreate, SaleResponse, DailyReportResponse
+from backend.models import User, Token, Stock, Sale, PriceHistory, SystemSetting
+from backend.schemas import UserCreate, UserLogin, TokenAuth, StockCreate, StockUpdate, StockResponse, TokenResponse, TokenCallNext, SaleCreate, SaleResponse, DailyReportResponse, SystemSettingResponse, SystemSettingUpdate
 from backend.services.sms_service import SMSService, datetime_now_str
 from backend.main_shared import simulator_connections, broadcast_to_simulator, queue_connections, broadcast_queue_update
 from backend.routes.webhooks import router as webhook_router, calculate_estimated_wait_time
@@ -48,9 +52,178 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return hash_password(plain_password) == hashed_password
 
+def migrate_and_seed():
+    db = next(get_db())
+    try:
+        # 1. Run migrations for tokens table to add no_show_at column if not exists
+        try:
+            db.execute(text("SELECT no_show_at FROM tokens LIMIT 1"))
+        except Exception:
+            db.execute(text("ALTER TABLE tokens ADD COLUMN no_show_at DATETIME"))
+            db.commit()
+            print("Successfully migrated tokens table: added no_show_at.")
+
+        # 2. Check if system_settings is seeded
+        if db.query(SystemSetting).count() == 0:
+            default_setting = SystemSetting(
+                mill_name="Sri Trimula Rice Mill",
+                virtual_number="+917075295440",
+                holiday_mode=False,
+                queue_hold=False,
+                avg_service_time=8,
+                sms_gateway_active=True
+            )
+            db.add(default_setting)
+            db.commit()
+            print("Successfully seeded default system settings.")
+        else:
+            settings = db.query(SystemSetting).first()
+            if settings and settings.mill_name == "Sri Lakshmi Rice Mill":
+                settings.mill_name = "Sri Trimula Rice Mill"
+                db.commit()
+                print("Successfully updated database seeded name to Sri Trimula Rice Mill.")
+    except Exception as e:
+        print(f"Migration/Seeding failed: {e}")
+    finally:
+        db.close()
+
+# Background task for checking no-show timers (5 minutes timeout)
+async def auto_skip_no_shows_loop():
+    await asyncio.sleep(5) # wait for startup
+    while True:
+        try:
+            db = next(get_db())
+            settings = db.query(SystemSetting).first()
+            if settings and not settings.queue_hold and not settings.holiday_mode:
+                now = datetime.datetime.utcnow()
+                timeout_limit = now - datetime.timedelta(minutes=5)
+                expired_tokens = db.query(Token).filter(
+                    Token.status == "active",
+                    Token.called_at <= timeout_limit
+                ).all()
+                
+                for token in expired_tokens:
+                    token.status = "no_show"
+                    token.no_show_at = now
+                    db.commit()
+                    db.refresh(token)
+                    
+                    # Send SMS
+                    sms_text = SMSService.get_noshow_sms_text(token.token_number)
+                    await SMSService.send_sms(token.phone_number, sms_text)
+                    
+                    # Auto call next token on the same counter!
+                    counter = token.counter_assigned
+                    if counter:
+                        # Try to find next waiting token
+                        next_token = db.query(Token).filter(
+                            Token.status == "waiting",
+                            Token.created_at >= datetime.datetime.combine(datetime.date.today(), datetime.time.min),
+                            Token.priority == True
+                        ).order_by(Token.created_at).first()
+                        
+                        if not next_token:
+                            next_token = db.query(Token).filter(
+                                Token.status == "waiting",
+                                Token.created_at >= datetime.datetime.combine(datetime.date.today(), datetime.time.min),
+                                Token.priority == False
+                            ).order_by(Token.created_at).first()
+                            
+                        if next_token:
+                            next_token.status = "active"
+                            next_token.counter_assigned = counter
+                            next_token.called_at = now
+                            db.commit()
+                            
+                            # Send NOW ACTIVE SMS
+                            active_sms = SMSService.get_active_sms_text(next_token.token_number, counter)
+                            await SMSService.send_sms(next_token.phone_number, active_sms)
+                            
+                            # Alert next token (position = 2) that they are 2 Away
+                            second_token = db.query(Token).filter(
+                                Token.status == "waiting",
+                                Token.created_at >= datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+                            ).order_by(Token.priority.desc(), Token.created_at).first()
+                            
+                            if second_token:
+                                sec_wait = calculate_estimated_wait_time(db, 2)
+                                sec_sms = SMSService.get_2_away_sms_text(second_token.token_number, sec_wait)
+                                await SMSService.send_sms(second_token.phone_number, sec_sms)
+                                
+                    await broadcast_queue_update()
+        except Exception as e:
+            print(f"Error in auto-skip loop: {e}")
+        finally:
+            db.close()
+        await asyncio.sleep(10)
+
+# Background task for sending daily 10 PM IST SMS report summary
+last_sent_report_date = None
+
+async def daily_report_sms_loop():
+    global last_sent_report_date
+    await asyncio.sleep(10) # wait for startup
+    while True:
+        try:
+            utc_now = datetime.datetime.utcnow()
+            ist_now = utc_now + datetime.timedelta(hours=5, minutes=30)
+            
+            # Check if it is 10:00 PM IST (22:00)
+            if ist_now.hour == 22 and ist_now.minute == 0:
+                today_str = ist_now.strftime("%Y-%m-%d")
+                if last_sent_report_date != today_str:
+                    db = next(get_db())
+                    try:
+                        settings = db.query(SystemSetting).first()
+                        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+                        today_date = datetime.date.today()
+                        start_of_day = datetime.datetime.combine(today_date, datetime.time.min)
+                        
+                        tokens = db.query(Token).filter(Token.created_at >= start_of_day).all()
+                        served = len([t for t in tokens if t.status == "served"])
+                        no_shows = len([t for t in tokens if t.status == "no_show"])
+                        no_show_rate = (no_shows / len(tokens) * 100.0) if tokens else 0.0
+                        
+                        sales = db.query(Sale).filter(Sale.created_at >= start_of_day).all()
+                        total_rev = sum(s.total_price for s in sales)
+                        
+                        stock_consumed = {}
+                        for s in sales:
+                            stock_consumed[s.variety_name] = stock_consumed.get(s.variety_name, 0.0) + s.quantity_kg
+                            
+                        stock_lines = [f"  ├ {var}: {qty:.0f} kg" for var, qty in stock_consumed.items()]
+                        stock_str = "\n".join(stock_lines) if stock_lines else "  ├ None"
+                        
+                        report_sms = (
+                            f"📊 {mill_name} - Daily Report\n"
+                            f"Date: {ist_now.strftime('%d-%b-%Y')}\n"
+                            f"----------------------\n"
+                            f"Tokens Served: {served}\n"
+                            f"No-Shows: {no_shows} ({no_show_rate:.1f}%)\n"
+                            f"Total Revenue: ₹{total_rev:.0f}\n"
+                            f"Stock Consumed:\n{stock_str}"
+                        )
+                        
+                        await SMSService.send_sms("+919999999999", report_sms)
+                        last_sent_report_date = today_str
+                        print(f"Sent daily SMS report at 10 PM IST: {today_str}")
+                    except Exception as inner_e:
+                        print(f"Error generating daily SMS report: {inner_e}")
+                    finally:
+                        db.close()
+        except Exception as e:
+            print(f"Error in daily report SMS loop: {e}")
+        await asyncio.sleep(60)
+
 # Startup Seeding
 @app.on_event("startup")
 def seed_users():
+    migrate_and_seed()
+    
+    # Start background loops
+    asyncio.create_task(auto_skip_no_shows_loop())
+    asyncio.create_task(daily_report_sms_loop())
+    
     db = next(get_db())
     try:
         # Check if users already exist
@@ -280,6 +453,9 @@ async def serve_token(token_id: int, sale_input: SaleCreate, db: Session = Depen
     stock = db.query(Stock).filter(Stock.variety_name == sale_input.variety_name).first()
     if not stock:
         raise HTTPException(status_code=400, detail="Rice variety not found.")
+        
+    if stock.quantity_kg <= 0:
+        raise HTTPException(status_code=400, detail="Stock is empty! Cannot sell this variety.")
         
     if stock.quantity_kg < sale_input.quantity_kg:
         raise HTTPException(status_code=400, detail=f"Insufficient stock! Available: {stock.quantity_kg} kg.")
@@ -588,6 +764,143 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
             {"name": "Sona Masuri", "value": 200},
             {"name": "Sharbati", "value": 35}
         ]
+    }
+
+# --- Settings API ---
+@app.get("/api/settings", response_model=SystemSettingResponse)
+def get_settings(db: Session = Depends(get_db)):
+    settings = db.query(SystemSetting).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found.")
+    return settings
+
+@app.put("/api/settings", response_model=SystemSettingResponse)
+async def update_settings(update: SystemSettingUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    check_role(current_user, ["owner"])
+    settings = db.query(SystemSetting).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found.")
+        
+    if update.mill_name is not None:
+        settings.mill_name = update.mill_name
+    if update.virtual_number is not None:
+        settings.virtual_number = update.virtual_number
+    if update.holiday_mode is not None:
+        settings.holiday_mode = update.holiday_mode
+    if update.queue_hold is not None:
+        settings.queue_hold = update.queue_hold
+    if update.avg_service_time is not None:
+        settings.avg_service_time = update.avg_service_time
+    if update.sms_gateway_active is not None:
+        settings.sms_gateway_active = update.sms_gateway_active
+        
+    db.commit()
+    db.refresh(settings)
+    
+    # Broadcast to all active clients (WebSockets)
+    await broadcast_queue_update()
+    return settings
+
+@app.get("/api/stock/price-history")
+def get_price_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    check_role(current_user, ["owner"])
+    hist = db.query(PriceHistory).order_by(PriceHistory.changed_at.desc()).all()
+    return [
+        {
+            "id": h.id,
+            "variety_name": h.variety_name,
+            "old_price": h.old_price,
+            "new_price": h.new_price,
+            "changed_by": h.changed_by,
+            "changed_at": h.changed_at
+        }
+        for h in hist
+    ]
+
+@app.get("/api/users/security")
+def get_security_status(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    check_role(current_user, ["owner"])
+    users = db.query(User).all()
+    return [
+        {
+            "username": u.username,
+            "role": u.role,
+            "full_name": u.full_name,
+            "failed_attempts": u.failed_login_attempts,
+            "is_locked": u.locked_until > datetime.datetime.utcnow() if u.locked_until else False,
+            "locked_until": u.locked_until if u.locked_until else None
+        }
+        for u in users
+    ]
+
+# --- Bulk Stock Import API ---
+@app.post("/api/stock/bulk-import")
+async def bulk_import_stock(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    check_role(current_user, ["owner"])
+    
+    content = await file.read()
+    text = content.decode('utf-8')
+    csv_reader = csv.DictReader(io.StringIO(text))
+    
+    imported_count = 0
+    updated_count = 0
+    
+    for row in csv_reader:
+        try:
+            variety = row.get("variety_name", "").strip()
+            if not variety:
+                continue
+                
+            qty = float(row.get("quantity_kg", 0.0))
+            price = float(row.get("price_per_kg", 0.0))
+            threshold = float(row.get("low_stock_threshold", 50.0))
+            
+            existing = db.query(Stock).filter(Stock.variety_name == variety).first()
+            if existing:
+                old_price = existing.price_per_kg
+                existing.quantity_kg = qty
+                existing.price_per_kg = price
+                existing.low_stock_threshold = threshold
+                
+                # Log price change if different
+                if price != old_price:
+                    ph = PriceHistory(
+                        variety_name=variety,
+                        old_price=old_price,
+                        new_price=price,
+                        changed_by=current_user.full_name
+                    )
+                    db.add(ph)
+                updated_count += 1
+            else:
+                new_stock = Stock(
+                    variety_name=variety,
+                    quantity_kg=qty,
+                    price_per_kg=price,
+                    low_stock_threshold=threshold
+                )
+                db.add(new_stock)
+                
+                ph = PriceHistory(
+                    variety_name=variety,
+                    old_price=0.0,
+                    new_price=price,
+                    changed_by=current_user.full_name
+                )
+                db.add(ph)
+                imported_count += 1
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"CSV parse error: {str(e)}")
+            
+    db.commit()
+    return {
+        "status": "success",
+        "imported": imported_count,
+        "updated": updated_count
     }
 
 # Include routers

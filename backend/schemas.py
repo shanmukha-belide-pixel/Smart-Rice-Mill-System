@@ -72,6 +72,7 @@ class TokenResponse(TokenBase):
     id: int
     called_at: Optional[datetime] = None
     served_at: Optional[datetime] = None
+    no_show_at: Optional[datetime] = None
     class Config:
         from_attributes = True
 
@@ -111,3 +112,26 @@ class DailyReportResponse(BaseModel):
     total_revenue: float
     payment_breakdown: dict # e.g. {"Cash": 100, "UPI": 200, "Credit": 50}
     stock_consumed: dict # e.g. {"Basmati": 50, "Sona Masuri": 100}
+
+# System Setting schemas
+class SystemSettingBase(BaseModel):
+    mill_name: str
+    virtual_number: str
+    holiday_mode: bool
+    queue_hold: bool
+    avg_service_time: int
+    sms_gateway_active: bool
+
+class SystemSettingUpdate(BaseModel):
+    mill_name: Optional[str] = None
+    virtual_number: Optional[str] = None
+    holiday_mode: Optional[bool] = None
+    queue_hold: Optional[bool] = None
+    avg_service_time: Optional[int] = None
+    sms_gateway_active: Optional[bool] = None
+
+class SystemSettingResponse(SystemSettingBase):
+    id: int
+    class Config:
+        from_attributes = True
+

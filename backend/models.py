@@ -47,6 +47,7 @@ class Token(Base):
     wait_time_minutes = Column(Integer, default=0)
     called_at = Column(DateTime, nullable=True)
     served_at = Column(DateTime, nullable=True)
+    no_show_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
 class Sale(Base):
@@ -60,3 +61,15 @@ class Sale(Base):
     payment_mode = Column(String, nullable=False) # 'Cash', 'UPI', 'Credit'
     service_time_seconds = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    mill_name = Column(String, default="Sri Trimula Rice Mill")
+    virtual_number = Column(String, default="+917075295440")
+    holiday_mode = Column(Boolean, default=False)
+    queue_hold = Column(Boolean, default=False)
+    avg_service_time = Column(Integer, default=8)
+    sms_gateway_active = Column(Boolean, default=True)
+

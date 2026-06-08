@@ -622,22 +622,47 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
             </div>
             <div className="p-3 divide-y divide-slate-900/80 max-h-[220px] overflow-y-auto">
               {noShowTokens.length > 0 ? (
-                noShowTokens.map(token => (
-                  <div key={token.id} className="flex justify-between items-center py-2.5 text-[11px]">
-                    <div className="space-y-0.5">
-                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900">
-                        {token.token_number}
-                      </span>
-                      <span className="text-[9px] text-slate-550 font-mono block mt-1">{token.phone_number}</span>
+                noShowTokens.map(token => {
+                  // Helper to parse database UTC string safely
+                  const getNoShowMinutes = (noShowAtStr) => {
+                    if (!noShowAtStr) return 999;
+                    const utcStr = noShowAtStr.endsWith('Z') ? noShowAtStr : noShowAtStr + 'Z';
+                    const diffMs = new Date() - new Date(utcStr);
+                    const mins = Math.floor(diffMs / 60000);
+                    return mins >= 0 ? mins : 0;
+                  };
+                  const elapsedMins = getNoShowMinutes(token.no_show_at);
+                  const isReactivatable = elapsedMins <= 10;
+                  
+                  return (
+                    <div key={token.id} className="flex justify-between items-center py-2.5 text-[11px]">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-slate-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900">
+                            {token.token_number}
+                          </span>
+                          <span className={`text-[8px] font-bold uppercase tracking-wider font-mono ${isReactivatable ? 'text-amber-500' : 'text-slate-500'}`}>
+                            {isReactivatable ? `${elapsedMins}m ago` : 'Expired'}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-slate-550 font-mono block mt-1">{token.phone_number}</span>
+                      </div>
+                      
+                      {isReactivatable ? (
+                        <button
+                          onClick={() => handleReactivate(token.id)}
+                          className="text-emerald-500 hover:text-emerald-450 hover:bg-emerald-500/10 px-2.5 py-1 rounded-lg transition-colors text-[10px] font-bold border border-transparent hover:border-emerald-500/10 cursor-pointer"
+                        >
+                          {t.reactivate}
+                        </button>
+                      ) : (
+                        <span className="text-[9px] text-slate-500 font-mono uppercase tracking-wider font-bold pr-2" title="Skipped for more than 10 minutes. Client must register a new token.">
+                          Expired
+                        </span>
+                      )}
                     </div>
-                    <button
-                      onClick={() => handleReactivate(token.id)}
-                      className="text-emerald-500 hover:text-emerald-450 hover:bg-emerald-500/10 px-2.5 py-1 rounded-lg transition-colors text-[10px] font-bold border border-transparent hover:border-emerald-500/10 cursor-pointer"
-                    >
-                      {t.reactivate}
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="py-6 text-center text-slate-700 text-xs">{t.noSkippedCustomers}</div>
               )}
@@ -746,6 +771,11 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
                     </option>
                   ))}
                 </select>
+                {selectedStockItem && selectedStockItem.quantity_kg <= 0 && (
+                  <div className="bg-rose-950/40 border border-rose-900/30 text-rose-450 p-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 mt-1.5">
+                    ⚠️ {language === 'te' ? 'నిల్వ సున్నా! ఈ రకం రద్దు అయింది.' : 'Out of Stock! Cannot complete sale.'}
+                  </div>
+                )}
               </div>
 
               {/* Quantity calculation inputs */}
@@ -872,7 +902,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
                 </button>
                 <button
                   type="submit"
-                  disabled={saleForm.payment_mode === 'UPI' && !scanVerified}
+                  disabled={(saleForm.payment_mode === 'UPI' && !scanVerified) || (selectedStockItem && selectedStockItem.quantity_kg <= 0)}
                   className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 cursor-pointer"
                 >
                   {t.recordAndServe}
