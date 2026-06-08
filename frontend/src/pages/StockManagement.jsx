@@ -38,6 +38,26 @@ export default function StockManagement({ backendUrl, userToken, language }) {
 
   useEffect(() => {
     fetchStock();
+
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const cleanHost = backendUrl.replace('http://', '').replace('https://', '');
+    const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
+
+    let socket;
+    function connect() {
+      socket = new WebSocket(wsUrl);
+      socket.onmessage = (e) => {
+        if (e.data === 'REFRESH_QUEUE' || e.data === 'REFRESH_STOCK') {
+          fetchStock();
+        }
+      };
+      socket.onclose = () => setTimeout(connect, 3000);
+    }
+    
+    connect();
+    return () => {
+      if (socket) socket.close();
+    };
   }, [backendUrl]);
 
   // Handle quantity mapping for forms (1 bag = 10 kg)

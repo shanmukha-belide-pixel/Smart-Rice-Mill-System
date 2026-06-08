@@ -171,13 +171,15 @@ class MockWebSocket {
   }
 }
 
+let pullPromise = null;
+
 // Global fetch interceptor routing matching API routes locally
 const setupMockApi = () => {
   // First load from local cached storage (for quick load)
   initMockDatabase();
 
   // Asynchronously sync from cloud storage bin (so data matches across devices)
-  pullFromCloud();
+  pullPromise = pullFromCloud();
 
   // Override WebSocket globally
   window.WebSocket = MockWebSocket;
@@ -189,6 +191,15 @@ const setupMockApi = () => {
     // Skip if not an API call
     if (!urlStr.includes('/api/')) {
       return originalFetch(input, init);
+    }
+
+    // Wait for initial cloud sync to complete before responding to API requests
+    if (pullPromise) {
+      try {
+        await pullPromise;
+      } catch (err) {
+        console.error("[Mock API] Error waiting for initial cloud sync:", err);
+      }
     }
 
     const urlObj = new URL(urlStr);

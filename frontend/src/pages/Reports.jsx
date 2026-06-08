@@ -34,6 +34,26 @@ export default function Reports({ backendUrl, userToken, language }) {
 
   useEffect(() => {
     fetchReports();
+
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const cleanHost = backendUrl.replace('http://', '').replace('https://', '');
+    const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
+
+    let socket;
+    function connect() {
+      socket = new WebSocket(wsUrl);
+      socket.onmessage = (e) => {
+        if (e.data === 'REFRESH_QUEUE' || e.data === 'REFRESH_REPORTS') {
+          fetchReports();
+        }
+      };
+      socket.onclose = () => setTimeout(connect, 3000);
+    }
+    
+    connect();
+    return () => {
+      if (socket) socket.close();
+    };
   }, [backendUrl]);
 
   // Real client-side exports
