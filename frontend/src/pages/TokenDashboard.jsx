@@ -326,7 +326,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
   // Stats calculation
   const totalServedToday = servedTokens.length;
   const waitingCount = waitingTokens.length;
-  const noShowRate = tokens.length ? ((noShowTokens.length / tokens.length) * 100).toFixed(1) : 0;
+  const noShowRate = (tokens && tokens.length) ? ((noShowTokens.length / tokens.length) * 100).toFixed(1) : 0;
   
   // Calculate wait time
   const nextWaitMinutes = waitingCount * 8;
@@ -337,7 +337,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
   const currentTotal = (parseFloat(saleForm.quantity_kg) || 0) * itemPrice;
   
   const upiUrlPayload = servingToken 
-    ? `upi://pay?pa=7075295440@ybl&pn=BELIDE%20SHANMUKHA%20SRINIVAS&am=${currentTotal.toFixed(2)}&cu=INR&tn=${servingToken.token_number}` 
+    ? `upi://pay?pa=7075295440@ybl&pn=BELIDE%20SHANMUKHA%20SRINIVAS&am=${(currentTotal || 0).toFixed(2)}&cu=INR&tn=${servingToken.token_number}` 
     : '';
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiUrlPayload)}`;
 
@@ -767,7 +767,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
                 >
                   {stockVarieties.map(s => (
                     <option key={s.id} value={s.variety_name}>
-                      {s.variety_name} (₹{s.price_per_kg.toFixed(1)}/{language === 'te' ? 'కిలో' : 'kg'}) - Max {s.quantity_kg.toFixed(1)}kg
+                      {s.variety_name} (₹{(s.price_per_kg || 0).toFixed(1)}/{language === 'te' ? 'కిలో' : 'kg'}) - Max {(s.quantity_kg || 0).toFixed(1)}kg
                     </option>
                   ))}
                 </select>
@@ -972,11 +972,11 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
                   </div>
                   <div className="flex justify-between text-slate-700">
                     <span>{t.receiptBags}:</span>
-                    <span>{receiptData.bags.toFixed(1)}</span>
+                    <span>{(receiptData.bags || 0).toFixed(1)}</span>
                   </div>
                   <div className="flex justify-between text-slate-700">
                     <span>{t.receiptRate}:</span>
-                    <span>₹{receiptData.pricePerKg.toFixed(2)} / kg</span>
+                    <span>₹{(receiptData.pricePerKg || 0).toFixed(2)} / kg</span>
                   </div>
                 </div>
 
@@ -984,7 +984,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
                 <div className="pt-3 space-y-1.5">
                   <div className="flex justify-between font-bold text-slate-950 text-sm">
                     <span>{t.receiptTotal}:</span>
-                    <span>₹{receiptData.totalAmount.toFixed(2)}</span>
+                    <span>₹{(receiptData.totalAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-500">
                     <span>{t.receiptPaymentMode}:</span>

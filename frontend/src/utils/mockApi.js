@@ -1,10 +1,11 @@
-// In-browser LocalStorage Mock DB and API Interceptor for Smart Rice Mill System
+// Centralized Cloud JSON Storage Mock API for Smart Rice Mill System
 const MOCK_SOCKETS = new Set();
+const BIN_URL = 'https://extendsclass.com/api/json-storage/bin/ccfedec';
 
-// Helper to seed localStorage database keys if not initialized
-const initMockDatabase = () => {
-  if (!localStorage.getItem('ricemill_settings')) {
-    localStorage.setItem('ricemill_settings', JSON.stringify({
+// Helper to seed default data
+const getInitialState = () => {
+  return {
+    settings: {
       id: 1,
       mill_name: 'Sri Trimula Rice Mill',
       virtual_number: '+917075295440',
@@ -12,35 +13,124 @@ const initMockDatabase = () => {
       queue_hold: false,
       avg_service_time: 8,
       sms_gateway_active: true
-    }));
-  }
-
-  if (!localStorage.getItem('ricemill_stock')) {
-    localStorage.setItem('ricemill_stock', JSON.stringify([
+    },
+    stock: [
       { id: 1, variety_name: 'Basmati', quantity_kg: 500, price_per_kg: 120, low_stock_threshold: 50 },
       { id: 2, variety_name: 'Sona Masuri', quantity_kg: 800, price_per_kg: 55, low_stock_threshold: 100 },
       { id: 3, variety_name: 'Sharbati', quantity_kg: 300, price_per_kg: 75, low_stock_threshold: 50 }
-    ]));
-  }
+    ],
+    tokens: [],
+    sales: [],
+    price_history: [],
+    sms_inbox: [],
+    locked_accounts: []
+  };
+};
 
-  if (!localStorage.getItem('ricemill_tokens')) {
-    localStorage.setItem('ricemill_tokens', JSON.stringify([]));
-  }
+// Seed LocalStorage database keys with defaults safely
+const initMockDatabase = () => {
+  const defaults = getInitialState();
+  
+  const checkAndSeed = (key, defaultVal) => {
+    try {
+      const val = localStorage.getItem(key);
+      if (!val || val === 'undefined' || val === 'null') {
+        localStorage.setItem(key, JSON.stringify(defaultVal));
+      }
+    } catch (e) {
+      localStorage.setItem(key, JSON.stringify(defaultVal));
+    }
+  };
 
-  if (!localStorage.getItem('ricemill_sales')) {
-    localStorage.setItem('ricemill_sales', JSON.stringify([]));
-  }
+  checkAndSeed('ricemill_settings', defaults.settings);
+  checkAndSeed('ricemill_stock', defaults.stock);
+  checkAndSeed('ricemill_tokens', defaults.tokens);
+  checkAndSeed('ricemill_sales', defaults.sales);
+  checkAndSeed('ricemill_price_history', defaults.price_history);
+  checkAndSeed('ricemill_sms_inbox', defaults.sms_inbox);
+  checkAndSeed('ricemill_locked_accounts', defaults.locked_accounts);
+};
 
-  if (!localStorage.getItem('ricemill_price_history')) {
-    localStorage.setItem('ricemill_price_history', JSON.stringify([]));
-  }
+// Push local state to cloud JSON bin safely
+const pushToCloud = async () => {
+  try {
+    const defaults = getInitialState();
+    
+    const getCleanKey = (key, defaultVal) => {
+      try {
+        const val = localStorage.getItem(key);
+        if (!val || val === 'undefined' || val === 'null') return defaultVal;
+        return JSON.parse(val) || defaultVal;
+      } catch (e) {
+        return defaultVal;
+      }
+    };
 
-  if (!localStorage.getItem('ricemill_sms_inbox')) {
-    localStorage.setItem('ricemill_sms_inbox', JSON.stringify([]));
+    const state = {
+      settings: getCleanKey('ricemill_settings', defaults.settings),
+      stock: getCleanKey('ricemill_stock', defaults.stock),
+      tokens: getCleanKey('ricemill_tokens', defaults.tokens),
+      sales: getCleanKey('ricemill_sales', defaults.sales),
+      price_history: getCleanKey('ricemill_price_history', defaults.price_history),
+      sms_inbox: getCleanKey('ricemill_sms_inbox', defaults.sms_inbox),
+      locked_accounts: getCleanKey('ricemill_locked_accounts', defaults.locked_accounts)
+    };
+    
+    await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    console.log("[Mock API] Centralized Cloud Sync saved successfully.");
+  } catch (err) {
+    console.error("[Mock API] Centralized Cloud Sync save failed:", err);
   }
+};
 
-  if (!localStorage.getItem('ricemill_locked_accounts')) {
-    localStorage.setItem('ricemill_locked_accounts', JSON.stringify([]));
+// Pull state from cloud JSON bin on boot safely
+const pullFromCloud = async () => {
+  try {
+    const res = await fetch(BIN_URL);
+    if (res.ok) {
+      const state = await res.json();
+      // If server returned status (wrapped) or raw data
+      const data = state.data ? JSON.parse(state.data) : state;
+      if (data && typeof data === 'object') {
+        const defaults = getInitialState();
+        
+        // Sanitize and default settings
+        const settings = (data.settings && typeof data.settings === 'object')
+          ? { ...defaults.settings, ...data.settings }
+          : defaults.settings;
+
+        const sanitizeArray = (arr, fallback) => Array.isArray(arr) ? arr : fallback;
+
+        const stock = sanitizeArray(data.stock, defaults.stock);
+        const tokens = sanitizeArray(data.tokens, defaults.tokens);
+        const sales = sanitizeArray(data.sales, defaults.sales);
+        const price_history = sanitizeArray(data.price_history, defaults.price_history);
+        const sms_inbox = sanitizeArray(data.sms_inbox, defaults.sms_inbox);
+        const locked_accounts = sanitizeArray(data.locked_accounts, defaults.locked_accounts);
+
+        localStorage.setItem('ricemill_settings', JSON.stringify(settings));
+        localStorage.setItem('ricemill_stock', JSON.stringify(stock));
+        localStorage.setItem('ricemill_tokens', JSON.stringify(tokens));
+        localStorage.setItem('ricemill_sales', JSON.stringify(sales));
+        localStorage.setItem('ricemill_price_history', JSON.stringify(price_history));
+        localStorage.setItem('ricemill_sms_inbox', JSON.stringify(sms_inbox));
+        localStorage.setItem('ricemill_locked_accounts', JSON.stringify(locked_accounts));
+        
+        console.log("[Mock API] Centralized Cloud Sync load completed.");
+        broadcastMockWs('REFRESH_QUEUE');
+      } else {
+        // Bin is empty, seed defaults locally first, then push to cloud
+        initMockDatabase();
+        await pushToCloud();
+      }
+    }
+  } catch (err) {
+    console.error("[Mock API] Centralized Cloud Sync load failed:", err);
+    initMockDatabase();
   }
 };
 
@@ -83,7 +173,11 @@ class MockWebSocket {
 
 // Global fetch interceptor routing matching API routes locally
 const setupMockApi = () => {
+  // First load from local cached storage (for quick load)
   initMockDatabase();
+
+  // Asynchronously sync from cloud storage bin (so data matches across devices)
+  pullFromCloud();
 
   // Override WebSocket globally
   window.WebSocket = MockWebSocket;
@@ -92,23 +186,33 @@ const setupMockApi = () => {
   window.fetch = async (input, init) => {
     const urlStr = typeof input === 'string' ? input : input.url;
     
-    // Check if the request is targeting our backend API
+    // Skip if not an API call
     if (!urlStr.includes('/api/')) {
       return originalFetch(input, init);
     }
 
-    // Parse URL path
     const urlObj = new URL(urlStr);
     const path = urlObj.pathname;
     const method = (init && init.method || 'GET').toUpperCase();
     
     console.log(`[Mock API Intercept] ${method} ${path}`);
 
-    // Helper functions to fetch and save local JSON state
-    const getDB = (key) => JSON.parse(localStorage.getItem(key) || '[]');
-    const setDB = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+    const getDB = (key, fallback = []) => {
+      try {
+        const val = localStorage.getItem(key);
+        if (!val || val === 'undefined' || val === 'null') return fallback;
+        return JSON.parse(val) || fallback;
+      } catch (e) {
+        return fallback;
+      }
+    };
 
-    // Construct mock response generator
+    const setDB = (key, data) => {
+      localStorage.setItem(key, JSON.stringify(data));
+      // Trigger cloud sync asynchronously
+      pushToCloud();
+    };
+
     const makeResponse = (data, status = 200) => {
       return new Response(JSON.stringify(data), {
         status,
@@ -133,14 +237,16 @@ const setupMockApi = () => {
 
       // 2. Settings Endpoints
       if (path === '/api/settings') {
+        const defaults = getInitialState().settings;
         if (method === 'GET') {
-          const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
-          return makeResponse(settings);
+          const settingsVal = localStorage.getItem('ricemill_settings');
+          const settings = settingsVal ? JSON.parse(settingsVal) : defaults;
+          return makeResponse({ ...defaults, ...settings });
         }
         if (method === 'PUT') {
           const body = JSON.parse(init.body);
           localStorage.setItem('ricemill_settings', JSON.stringify(body));
-          // Notify WebSocket client screens to refresh settings
+          pushToCloud();
           broadcastMockWs('REFRESH_QUEUE');
           return makeResponse(body);
         }
@@ -156,7 +262,41 @@ const setupMockApi = () => {
       // 4. Stock Endpoints
       if (path === '/api/stock') {
         if (method === 'GET') {
-          return makeResponse(getDB('ricemill_stock'));
+          const stock = getDB('ricemill_stock');
+          // Sanitize stock items to guarantee numbers for calculation
+          const stockWithBags = stock.map(s => {
+            const quantity = typeof s.quantity_kg === 'number' ? s.quantity_kg : parseFloat(s.quantity_kg) || 0;
+            const price = typeof s.price_per_kg === 'number' ? s.price_per_kg : parseFloat(s.price_per_kg) || 0;
+            const threshold = typeof s.low_stock_threshold === 'number' ? s.low_stock_threshold : parseFloat(s.low_stock_threshold) || 0;
+            return {
+              ...s,
+              quantity_kg: quantity,
+              price_per_kg: price,
+              low_stock_threshold: threshold,
+              bags_count: quantity / 10.0,
+              created_at: s.created_at || new Date().toISOString(),
+              updated_at: s.updated_at || new Date().toISOString()
+            };
+          });
+          return makeResponse(stockWithBags);
+        }
+
+        if (method === 'POST') {
+          const body = JSON.parse(init.body);
+          const stock = getDB('ricemill_stock');
+          const newVariety = {
+            id: stock.length + 1,
+            variety_name: body.variety_name || 'New Variety',
+            quantity_kg: parseFloat(body.quantity_kg) || 0,
+            price_per_kg: parseFloat(body.price_per_kg) || 0,
+            low_stock_threshold: parseFloat(body.low_stock_threshold) || 50,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          stock.push(newVariety);
+          setDB('ricemill_stock', stock);
+          broadcastMockWs('REFRESH_QUEUE');
+          return makeResponse(newVariety);
         }
       }
 
@@ -165,7 +305,7 @@ const setupMockApi = () => {
         
         // POST /api/stock/bulk-import
         if (parts[3] === 'bulk-import') {
-          const body = JSON.parse(init.body); // will receive array of records
+          const body = JSON.parse(init.body);
           const stock = getDB('ricemill_stock');
           body.forEach(importItem => {
             const match = stock.find(s => s.variety_name.toLowerCase() === importItem.variety_name.toLowerCase());
@@ -199,41 +339,56 @@ const setupMockApi = () => {
           const stock = getDB('ricemill_stock');
           const idx = stock.findIndex(s => s.id === stockId);
           if (idx !== -1) {
-            const oldPrice = stock[idx].price_per_kg;
-            const oldQty = stock[idx].quantity_kg;
-            stock[idx] = { ...stock[idx], ...body };
+            const oldPrice = typeof stock[idx].price_per_kg === 'number' ? stock[idx].price_per_kg : parseFloat(stock[idx].price_per_kg) || 0;
+            const newPrice = typeof body.price_per_kg === 'number' ? body.price_per_kg : parseFloat(body.price_per_kg) || 0;
+            const newQty = typeof body.quantity_kg === 'number' ? body.quantity_kg : parseFloat(body.quantity_kg) || 0;
+            const newThreshold = typeof body.low_stock_threshold === 'number' ? body.low_stock_threshold : parseFloat(body.low_stock_threshold) || 0;
+
+            stock[idx] = { 
+              ...stock[idx], 
+              ...body,
+              quantity_kg: newQty,
+              price_per_kg: newPrice,
+              low_stock_threshold: newThreshold
+            };
             setDB('ricemill_stock', stock);
 
             // Log price history changes
-            if (oldPrice !== body.price_per_kg) {
+            if (oldPrice !== newPrice) {
               const history = getDB('ricemill_price_history');
               history.unshift({
                 id: history.length + 1,
                 variety_name: stock[idx].variety_name,
                 old_price: oldPrice,
-                new_price: body.price_per_kg,
+                new_price: newPrice,
                 changed_by: 'Shanmukha',
                 changed_at: new Date().toISOString()
               });
               setDB('ricemill_price_history', history);
             }
-            
-            // Check low stock threshold alert
-            if (body.quantity_kg <= stock[idx].low_stock_threshold) {
+
+            // Alert low stock
+            if (newQty <= newThreshold) {
               const smsInbox = getDB('ricemill_sms_inbox');
               smsInbox.unshift({
                 phone_number: '+919999999999',
-                message: `⚠️ Sri Trimula Mill Stock Alert: ${stock[idx].variety_name} low: ${body.quantity_kg} kg (Threshold: ${stock[idx].low_stock_threshold} kg). Reorder: 500 kg.`,
+                message: `⚠️ Sri Trimula Mill Stock Alert: ${stock[idx].variety_name} low: ${newQty} kg (Threshold: ${newThreshold} kg). Reorder: 500 kg.`,
                 timestamp: new Date().toLocaleTimeString(),
                 provider: 'SIMULATOR'
               });
               setDB('ricemill_sms_inbox', smsInbox);
-              // Trigger reload in simulator
               broadcastMockWs('NEW_SMS_MOCKED');
             }
 
+            const responseItem = {
+              ...stock[idx],
+              bags_count: newQty / 10.0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+
             broadcastMockWs('REFRESH_QUEUE');
-            return makeResponse(stock[idx]);
+            return makeResponse(responseItem);
           }
           return makeResponse({ detail: 'Stock item not found' }, 404);
         }
@@ -242,15 +397,14 @@ const setupMockApi = () => {
       // 5. Token Endpoints
       if (path === '/api/tokens') {
         if (method === 'GET') {
-          const tokens = getDB('ricemill_tokens');
-          return makeResponse(tokens);
+          return makeResponse(getDB('ricemill_tokens'));
         }
         if (method === 'POST') {
           const body = JSON.parse(init.body);
           const tokens = getDB('ricemill_tokens');
-          const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+          const settingsVal = localStorage.getItem('ricemill_settings');
+          const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
 
-          // Check closed day / holiday mode
           if (settings && settings.holiday_mode) {
             return makeResponse({ detail: 'Holiday mode active' }, 400);
           }
@@ -276,7 +430,6 @@ const setupMockApi = () => {
           tokens.push(newToken);
           setDB('ricemill_tokens', tokens);
 
-          // Simulated Registration SMS
           const smsInbox = getDB('ricemill_sms_inbox');
           const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
           smsInbox.unshift({
@@ -299,7 +452,6 @@ const setupMockApi = () => {
           const counter = body.counter || 'Counter 1';
           const tokens = getDB('ricemill_tokens');
           
-          // Auto skip currently called active tokens on this counter to prevent queue block
           tokens.forEach(t => {
             if (t.status === 'active' && t.counter_assigned === counter) {
               t.status = 'no_show';
@@ -307,7 +459,6 @@ const setupMockApi = () => {
             }
           });
 
-          // Fetch next waiting (Priority sorted first, then created_at)
           const nextIndex = tokens.findIndex(t => t.status === 'waiting');
           if (nextIndex !== -1) {
             tokens[nextIndex].status = 'active';
@@ -315,8 +466,8 @@ const setupMockApi = () => {
             tokens[nextIndex].called_at = new Date().toISOString();
             setDB('ricemill_tokens', tokens);
 
-            // Simulated Call Active SMS
-            const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+            const settingsVal = localStorage.getItem('ricemill_settings');
+            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
@@ -325,9 +476,7 @@ const setupMockApi = () => {
               timestamp: new Date().toLocaleTimeString(),
               provider: 'SIMULATOR'
             });
-            setDB('ricemill_sms_inbox', smsInbox);
 
-            // Alert token position 2 (2 Away)
             const waitIdx = tokens.findIndex((t, i) => t.status === 'waiting' && i > nextIndex);
             if (waitIdx !== -1) {
               smsInbox.unshift({
@@ -350,38 +499,41 @@ const setupMockApi = () => {
       if (path.startsWith('/api/tokens/')) {
         const parts = path.split('/');
         const tokenId = parseInt(parts[3]);
-        const action = parts[4]; // serve, no-show, reactivate
+        const action = parts[4];
 
         const tokens = getDB('ricemill_tokens');
         const tokenIdx = tokens.findIndex(t => t.id === tokenId);
 
         if (tokenIdx !== -1) {
-          // Serve customer checkout
           if (action === 'serve' && method === 'POST') {
             const body = JSON.parse(init.body);
             const stock = getDB('ricemill_stock');
             const itemIdx = stock.findIndex(s => s.variety_name === body.variety_name);
             
+            const reqQty = parseFloat(body.quantity_kg) || 0;
+            const reqPrice = parseFloat(body.price_per_kg) || 0;
+            const reqTotal = parseFloat(body.total_price) || 0;
+
             if (itemIdx !== -1) {
-              if (stock[itemIdx].quantity_kg < body.quantity_kg) {
+              const currentStockQty = parseFloat(stock[itemIdx].quantity_kg) || 0;
+              if (currentStockQty < reqQty) {
                 return makeResponse({ detail: 'Insufficient stock!' }, 400);
               }
-              stock[itemIdx].quantity_kg -= body.quantity_kg;
+              stock[itemIdx].quantity_kg = currentStockQty - reqQty;
               setDB('ricemill_stock', stock);
             }
 
             tokens[tokenIdx].status = 'served';
             setDB('ricemill_tokens', tokens);
 
-            // Record Sale
             const sales = getDB('ricemill_sales');
             const newSale = {
               id: sales.length + 1,
               token_number: tokens[tokenIdx].token_number,
               variety_name: body.variety_name,
-              quantity_kg: body.quantity_kg,
-              price_per_kg: body.price_per_kg,
-              total_price: body.total_price,
+              quantity_kg: reqQty,
+              price_per_kg: reqPrice,
+              total_price: reqTotal,
               payment_mode: body.payment_mode,
               service_time_seconds: Math.floor(Math.random() * 200) + 150,
               created_at: new Date().toISOString()
@@ -389,13 +541,13 @@ const setupMockApi = () => {
             sales.push(newSale);
             setDB('ricemill_sales', sales);
 
-            // Served SMS
-            const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+            const settingsVal = localStorage.getItem('ricemill_settings');
+            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
               phone_number: tokens[tokenIdx].phone_number,
-              message: `టోకెన్ ${tokens[tokenIdx].token_number} పూర్తయింది. ధన్యవాదాలు! మొత్తం బిల్లు: ₹${body.total_price.toFixed(2)}.\n\nToken ${tokens[tokenIdx].token_number} served. Thank you! Total: ₹${body.total_price.toFixed(2)}. - ${millName}`,
+              message: `టోకెన్ ${tokens[tokenIdx].token_number} పూర్తయింది. ధన్యవాదాలు! మొత్తం బిల్లు: ₹${reqTotal.toFixed(2)}.\n\nToken ${tokens[tokenIdx].token_number} served. Thank you! Total: ₹${reqTotal.toFixed(2)}. - ${millName}`,
               timestamp: new Date().toLocaleTimeString(),
               provider: 'SIMULATOR'
             });
@@ -406,14 +558,13 @@ const setupMockApi = () => {
             return makeResponse(newSale);
           }
 
-          // No show mark
           if (action === 'no-show' && method === 'POST') {
             tokens[tokenIdx].status = 'no_show';
             tokens[tokenIdx].no_show_at = new Date().toISOString();
             setDB('ricemill_tokens', tokens);
 
-            // No show SMS
-            const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+            const settingsVal = localStorage.getItem('ricemill_settings');
+            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
@@ -429,7 +580,6 @@ const setupMockApi = () => {
             return makeResponse(tokens[tokenIdx]);
           }
 
-          // Reactivate skipped customer
           if (action === 'reactivate' && method === 'POST') {
             const elapsed = (new Date() - new Date(tokens[tokenIdx].no_show_at)) / 60000;
             if (elapsed > 10) {
@@ -453,30 +603,118 @@ const setupMockApi = () => {
 
         const served = tokens.filter(t => t.status === 'served').length;
         const noShows = tokens.filter(t => t.status === 'no_show').length;
-        const totalRevenue = sales.reduce((sum, s) => sum + s.total_price, 0);
+        const totalRevenue = sales.reduce((sum, s) => sum + (parseFloat(s.total_price) || 0), 0);
 
         const stockConsumed = {};
         sales.forEach(s => {
-          stockConsumed[s.variety_name] = (stockConsumed[s.variety_name] || 0) + s.quantity_kg;
+          const qty = parseFloat(s.quantity_kg) || 0;
+          stockConsumed[s.variety_name] = (stockConsumed[s.variety_name] || 0) + qty;
+        });
+
+        // CRITICAL: Calculate payment breakdown dynamically to prevent .payment_breakdown undefined crashes!
+        const paymentBreakdown = { Cash: 0, UPI: 0, Credit: 0 };
+        sales.forEach(s => {
+          const mode = s.payment_mode || 'Cash';
+          const amt = parseFloat(s.total_price) || 0;
+          paymentBreakdown[mode] = (paymentBreakdown[mode] || 0) + amt;
         });
 
         return makeResponse({
           date: new Date().toLocaleDateString('en-IN'),
           tokens_served: served,
           no_shows: noShows,
-          no_show_rate: tokens.length ? (noShows / tokens.length * 100) : 0,
+          no_show_rate: tokens.length ? (noShows / tokens.length * 100) : 0.0,
           total_revenue: totalRevenue,
+          payment_breakdown: paymentBreakdown,
           stock_consumed: stockConsumed
+        });
+      }
+
+      if (path === '/api/reports/trends') {
+        const sales = getDB('ricemill_sales');
+        
+        if (sales.length > 0) {
+          // 1. Group sales by day label
+          const salesByDate = {};
+          sales.forEach(s => {
+            const d = new Date(s.created_at || new Date());
+            const dateStr = d.toLocaleDateString('en-IN');
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. Mon, Tue
+            if (!salesByDate[dateStr]) {
+              salesByDate[dateStr] = { day: dayName, revenue: 0, tokens: 0, dateObj: d };
+            }
+            salesByDate[dateStr].revenue += parseFloat(s.total_price) || 0;
+            salesByDate[dateStr].tokens += 1;
+          });
+
+          const sortedDates = Object.keys(salesByDate).sort((a, b) => salesByDate[a].dateObj - salesByDate[b].dateObj);
+          const weekly_revenue = sortedDates.slice(-7).map(dateStr => ({
+            day: salesByDate[dateStr].day,
+            revenue: salesByDate[dateStr].revenue,
+            tokens: salesByDate[dateStr].tokens
+          }));
+
+          // 2. Aggregate peak hours dynamically
+          const time_blocks = {
+            "06-08 AM": 0, "08-10 AM": 0, "10-12 PM": 0, "12-02 PM": 0,
+            "02-04 PM": 0, "04-06 PM": 0, "06-08 PM": 0
+          };
+          sales.forEach(s => {
+            const d = new Date(s.created_at || new Date());
+            const h = d.getHours();
+            if (6 <= h && h < 8) time_blocks["06-08 AM"] += 1;
+            else if (8 <= h && h < 10) time_blocks["08-10 AM"] += 1;
+            else if (10 <= h && h < 12) time_blocks["10-12 PM"] += 1;
+            else if (12 <= h && h < 14) time_blocks["12-02 PM"] += 1;
+            else if (14 <= h && h < 16) time_blocks["02-04 PM"] += 1;
+            else if (16 <= h && h < 18) time_blocks["04-06 PM"] += 1;
+            else if (18 <= h && h < 20) time_blocks["06-08 PM"] += 1;
+          });
+          const peak_hours = Object.entries(time_blocks).map(([hour, count]) => ({ hour, count }));
+
+          // 3. Aggregate variety splits dynamically
+          const variety_sales = {};
+          sales.forEach(s => {
+            variety_sales[s.variety_name] = (variety_sales[s.variety_name] || 0) + (parseFloat(s.quantity_kg) || 0);
+          });
+          const varieties_split = Object.entries(variety_sales).map(([name, value]) => ({ name, value }));
+
+          return makeResponse({ weekly_revenue, peak_hours, varieties_split });
+        }
+
+        // Fallback demo values if no sales recorded
+        return makeResponse({
+          weekly_revenue: [
+            {"day": "Mon", "revenue": 12400, "tokens": 98},
+            {"day": "Tue", "revenue": 14500, "tokens": 112},
+            {"day": "Wed", "revenue": 11200, "tokens": 85},
+            {"day": "Thu", "revenue": 16800, "tokens": 130},
+            {"day": "Fri", "revenue": 18450, "tokens": 142},
+            {"day": "Sat", "revenue": 19200, "tokens": 150},
+            {"day": "Sun", "revenue": 0, "tokens": 0}
+          ],
+          peak_hours: [
+            {"hour": "06-08 AM", "count": 15},
+            {"hour": "08-10 AM", "count": 45},
+            {"hour": "10-12 PM", "count": 68},
+            {"hour": "12-02 PM", "count": 28},
+            {"hour": "02-04 PM", "count": 12},
+            {"hour": "04-06 PM", "count": 35},
+            {"hour": "06-08 PM", "count": 52}
+          ],
+          varieties_split: [
+            {"name": "Basmati", "value": 150},
+            {"name": "Sona Masuri", "value": 200},
+            {"name": "Sharbati", "value": 35}
+          ]
         });
       }
 
       if (path === '/api/reports/weekly' || path === '/api/reports/monthly') {
         const sales = getDB('ricemill_sales');
-        // Group by day of week or date
         const weeklyData = [];
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         
-        // Create mock default chart trends to populate view
         const today = new Date();
         for (let i = 6; i >= 0; i--) {
           const d = new Date(today);
@@ -484,32 +722,31 @@ const setupMockApi = () => {
           const dayName = days[d.getDay()];
           const dateStr = d.toLocaleDateString('en-IN');
           
-          // filter actual sales matching this date
           const matchSales = sales.filter(s => new Date(s.created_at).toDateString() === d.toDateString());
-          const rev = matchSales.reduce((sum, s) => sum + s.total_price, 0);
+          const rev = matchSales.reduce((sum, s) => sum + (parseFloat(s.total_price) || 0), 0);
           
           weeklyData.push({
             date: dateStr,
             day: dayName,
-            revenue: rev > 0 ? rev : (Math.floor(Math.random() * 8000) + 2000), // seed random trend placeholder
+            revenue: rev > 0 ? rev : (Math.floor(Math.random() * 8000) + 2000),
             tokens: matchSales.length || Math.floor(Math.random() * 15) + 5
           });
         }
         return makeResponse(weeklyData);
       }
 
-      // 7. Simulated Telephony Webhooks (Command parsing simulator)
+      // 7. Simulated Telephony Webhooks
       if (path === '/api/webhooks/sms') {
         const params = new URLSearchParams(await init.body);
         const from = params.get('From') || '+910000000000';
         const bodyText = params.get('Body') || '';
         const cleanCmd = bodyText.trim().toUpperCase();
 
-        const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+        const settingsVal = localStorage.getItem('ricemill_settings');
+        const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
         const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
         const smsInbox = getDB('ricemill_sms_inbox');
 
-        // Log incoming command to inbox
         smsInbox.unshift({
           phone_number: from,
           message: `[INCOMING SMS] ${bodyText}`,
@@ -530,12 +767,10 @@ const setupMockApi = () => {
         };
 
         if (cleanCmd.startsWith('MOCK_SMS_REPORT:')) {
-          // Manual report simulation triggers from settings dashboard
           return makeReply(bodyText.replace('MOCK_SMS_REPORT: ', ''));
         }
 
         if (cleanCmd === 'TOKEN') {
-          // Register via SMS
           const tokens = getDB('ricemill_tokens');
           const tokenNum = `T-${String(tokens.length + 1).padStart(3, '0')}`;
           const ahead = tokens.filter(t => t.status === 'waiting').length;
@@ -562,8 +797,11 @@ const setupMockApi = () => {
 
         if (cleanCmd === 'PRICE') {
           const stock = getDB('ricemill_stock');
-          const pricePairs = stock.map(s => `${s.variety_name}: ₹${s.price_per_kg.toFixed(0)}/kg`).join(' | ');
-          const totalStock = stock.reduce((sum, s) => sum + s.quantity_kg, 0);
+          const pricePairs = stock.map(s => {
+            const price = typeof s.price_per_kg === 'number' ? s.price_per_kg : parseFloat(s.price_per_kg) || 0;
+            return `${s.variety_name}: ₹${price.toFixed(0)}/kg`;
+          }).join(' | ');
+          const totalStock = stock.reduce((sum, s) => sum + (parseFloat(s.quantity_kg) || 0), 0);
           return makeReply(`Today's Prices @ ${millName}:\n${pricePairs}\nTotal Stock: ${totalStock.toFixed(0)}kg (${(totalStock / 10).toFixed(0)} bags)`);
         }
 
@@ -605,9 +843,9 @@ const setupMockApi = () => {
         const params = new URLSearchParams(await init.body);
         const from = params.get('From') || '+910000000000';
         
-        // Simulates missed call token generation
         const tokens = getDB('ricemill_tokens');
-        const settings = JSON.parse(localStorage.getItem('ricemill_settings'));
+        const settingsVal = localStorage.getItem('ricemill_settings');
+        const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
         const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
 
         if (settings && settings.holiday_mode) {
@@ -662,7 +900,6 @@ const setupMockApi = () => {
         return makeResponse(getDB('ricemill_sms_inbox'));
       }
 
-      // Default fallback
       return makeResponse({ detail: 'Mock route not implemented' }, 501);
 
     } catch (err) {

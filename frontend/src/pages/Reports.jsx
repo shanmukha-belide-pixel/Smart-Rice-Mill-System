@@ -48,22 +48,23 @@ export default function Reports({ backendUrl, userToken, language }) {
         csvContent += `Report Date,${dailyData.date}\n\n`;
         
         csvContent += "--- Daily Highlights ---\n";
-        csvContent += `Total Revenue (₹),${dailyData.total_revenue}\n`;
-        csvContent += `Tokens Served,${dailyData.tokens_served}\n`;
-        csvContent += `No Shows,${dailyData.no_shows}\n`;
-        csvContent += `No Show Rate,${dailyData.no_show_rate.toFixed(1)}%\n\n`;
+        csvContent += `Total Revenue (₹),${dailyData.total_revenue || 0}\n`;
+        csvContent += `Tokens Served,${dailyData.tokens_served || 0}\n`;
+        csvContent += `No Shows,${dailyData.no_shows || 0}\n`;
+        csvContent += `No Show Rate,${(dailyData.no_show_rate || 0).toFixed(1)}%\n\n`;
         
         csvContent += "--- Revenue Collection Split ---\n";
         csvContent += "Payment Mode,Amount (₹)\n";
-        Object.entries(dailyData.payment_breakdown).forEach(([mode, amt]) => {
-          csvContent += `${mode},${amt}\n`;
+        Object.entries(dailyData.payment_breakdown || {}).forEach(([mode, amt]) => {
+          csvContent += `${mode},${amt || 0}\n`;
         });
         csvContent += "\n";
         
         csvContent += "--- Stock Consumption ---\n";
         csvContent += "Rice Variety,Quantity Checked-out (kg),Bags equivalent (10kg/bag)\n";
-        Object.entries(dailyData.stock_consumed).forEach(([variety, qty]) => {
-          csvContent += `${variety},${qty.toFixed(1)},${(qty / 10).toFixed(1)}\n`;
+        Object.entries(dailyData.stock_consumed || {}).forEach(([variety, qty]) => {
+          const qtyVal = qty || 0;
+          csvContent += `${variety},${qtyVal.toFixed(1)},${(qtyVal / 10).toFixed(1)}\n`;
         });
         
         // Download logic
@@ -197,19 +198,19 @@ export default function Reports({ backendUrl, userToken, language }) {
               <div class="highlight-grid">
                 <div class="highlight-card">
                   <div class="card-title">Daily Revenue</div>
-                  <div class="card-value">₹${dailyData.total_revenue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                  <div class="card-value">₹${(dailyData.total_revenue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                 </div>
                 <div class="highlight-card">
                   <div class="card-title">Tokens Served</div>
-                  <div class="card-value">${dailyData.tokens_served}</div>
+                  <div class="card-value">${dailyData.tokens_served || 0}</div>
                 </div>
                 <div class="highlight-card">
                   <div class="card-title">Stock Consumption</div>
-                  <div class="card-value">${Object.values(dailyData.stock_consumed).reduce((a, b) => a + b, 0).toFixed(1)} kg</div>
+                  <div class="card-value">${Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0).toFixed(1)} kg</div>
                 </div>
                 <div class="highlight-card">
                   <div class="card-title">No Show Rate</div>
-                  <div class="card-value">${dailyData.no_show_rate.toFixed(1)}%</div>
+                  <div class="card-value">${(dailyData.no_show_rate || 0).toFixed(1)}%</div>
                 </div>
               </div>
               
@@ -222,10 +223,10 @@ export default function Reports({ backendUrl, userToken, language }) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${Object.entries(dailyData.payment_breakdown).map(([mode, amt]) => `
+                  ${Object.entries(dailyData.payment_breakdown || {}).map(([mode, amt]) => `
                     <tr>
                       <td><strong>${mode}</strong></td>
-                      <td class="numeric ${mode === 'UPI' ? 'verified-total' : ''}">₹${amt.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                      <td class="numeric ${mode === 'UPI' ? 'verified-total' : ''}">₹${(amt || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -241,13 +242,16 @@ export default function Reports({ backendUrl, userToken, language }) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${Object.entries(dailyData.stock_consumed).map(([variety, qty]) => `
-                    <tr>
-                      <td>${variety}</td>
-                      <td class="numeric">${qty.toFixed(1)} kg</td>
-                      <td class="numeric">${(qty / 10).toFixed(0)} bags</td>
-                    </tr>
-                  `).join('')}
+                  ${Object.entries(dailyData.stock_consumed || {}).map(([variety, qty]) => {
+                    const qtyVal = qty || 0;
+                    return `
+                      <tr>
+                        <td>${variety}</td>
+                        <td class="numeric">${qtyVal.toFixed(1)} kg</td>
+                        <td class="numeric">${(qtyVal / 10).toFixed(0)} bags</td>
+                      </tr>
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
 
@@ -335,7 +339,7 @@ export default function Reports({ backendUrl, userToken, language }) {
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.tokensServed}</span>
-            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">{dailyData.tokens_served}</h3>
+            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">{dailyData.tokens_served || 0}</h3>
             <span className="text-[9px] text-slate-450 font-semibold">{language === 'te' ? 'కీప్యాడ్ / ఉచిత ఫోన్ ద్వారా కనెక్షన్లు' : '100% feature-phone queries'}</span>
           </div>
           <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/10">
@@ -348,10 +352,10 @@ export default function Reports({ backendUrl, userToken, language }) {
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.stockConsumed}</span>
             <h3 className="text-2xl font-extrabold text-slate-100 font-mono">
-              {Object.values(dailyData.stock_consumed).reduce((a, b) => a + b, 0).toFixed(0)} kg
+              {Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0).toFixed(0)} kg
             </h3>
             <span className="text-[9px] text-slate-450 font-semibold font-mono">
-              ~{(Object.values(dailyData.stock_consumed).reduce((a, b) => a + b, 0) / 10).toFixed(0)} {language === 'te' ? 'సంచులు సర్వ్ చేయబడ్డాయి' : 'bags checkout'}
+              ~{(Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0) / 10).toFixed(0)} {language === 'te' ? 'సంచులు సర్వ్ చేయబడ్డాయి' : 'bags checkout'}
             </span>
           </div>
           <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/10">
@@ -362,10 +366,10 @@ export default function Reports({ backendUrl, userToken, language }) {
         {/* No shows rate */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.noShow}</span>
-            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">{dailyData.no_shows}</h3>
+            <span className="text-[10px] text-slate-505 uppercase tracking-widest font-bold block">{t.noShow}</span>
+            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">{dailyData.no_shows || 0}</h3>
             <span className="text-[9px] text-emerald-450 font-bold">
-              {t.noShow}: {dailyData.no_show_rate.toFixed(1)}% ({language === 'te' ? 'గమ్యం < 5%' : 'Target < 5%'})
+              {t.noShow}: {(dailyData.no_show_rate || 0).toFixed(1)}% ({language === 'te' ? 'గమ్యం < 5%' : 'Target < 5%'})
             </span>
           </div>
           <div className="p-3 bg-slate-900 rounded-xl border border-slate-850">
@@ -499,14 +503,14 @@ export default function Reports({ backendUrl, userToken, language }) {
           </div>
           
           <div className="space-y-4 pt-2">
-            {Object.entries(dailyData.payment_breakdown).map(([mode, amt]) => {
+            {Object.entries(dailyData.payment_breakdown || {}).map(([mode, amt]) => {
               const total = dailyData.total_revenue || 1;
-              const percentage = ((amt / total) * 100).toFixed(0);
+              const percentage = (((amt || 0) / total) * 100).toFixed(0);
               return (
                 <div key={mode} className="space-y-1.5 animate-slide-in">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-400 font-semibold">{mode === 'Cash' ? t.cash : mode === 'UPI' ? t.upi : t.credit}</span>
-                    <span className="font-bold text-slate-200 font-mono">₹{amt.toLocaleString('en-IN')} ({percentage}%)</span>
+                    <span className="font-bold text-slate-200 font-mono">₹{(amt || 0).toLocaleString('en-IN')} ({percentage}%)</span>
                   </div>
                   {/* Progress bar */}
                   <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">

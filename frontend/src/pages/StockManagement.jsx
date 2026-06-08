@@ -94,11 +94,14 @@ export default function StockManagement({ backendUrl, userToken, language }) {
   // Open Edit Modal
   const openEditModal = (item) => {
     setEditingItem(item);
+    const qty = item.quantity_kg || 0;
+    const price = item.price_per_kg || 0;
+    const threshold = item.low_stock_threshold || 0;
     setEditForm({
-      quantity_kg: item.quantity_kg.toString(),
-      bags: (item.quantity_kg / 10).toString(),
-      price_per_kg: item.price_per_kg.toString(),
-      low_stock_threshold: item.low_stock_threshold.toString()
+      quantity_kg: qty.toString(),
+      bags: (qty / 10).toString(),
+      price_per_kg: price.toString(),
+      low_stock_threshold: threshold.toString()
     });
     setShowEditModal(true);
   };
@@ -215,11 +218,11 @@ export default function StockManagement({ backendUrl, userToken, language }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-900">
                     <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{language === 'te' ? 'బరువు (కిలోలు)' : 'Weight (kg)'}</span>
-                    <div className="text-sm font-bold text-slate-200 mt-1 font-mono">{item.quantity_kg.toFixed(1)}</div>
+                    <div className="text-sm font-bold text-slate-200 mt-1 font-mono">{(item.quantity_kg || 0).toFixed(1)}</div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-900">
                     <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{t.bags}</span>
-                    <div className="text-sm font-bold text-slate-200 mt-1 font-mono">{item.bags_count.toFixed(1)}</div>
+                    <div className="text-sm font-bold text-slate-200 mt-1 font-mono">{(item.bags_count || 0).toFixed(1)}</div>
                   </div>
                 </div>
 
@@ -227,7 +230,7 @@ export default function StockManagement({ backendUrl, userToken, language }) {
                 <div className="flex justify-between items-center text-xs pt-1">
                   <div>
                     <span className="text-slate-500 font-bold text-[9px] uppercase tracking-wider">{language === 'te' ? 'కిలో ధర' : 'Price/kg'}</span>
-                    <div className="font-extrabold text-slate-200 text-sm mt-0.5 font-mono">₹{item.price_per_kg.toFixed(2)}</div>
+                    <div className="font-extrabold text-slate-200 text-sm mt-0.5 font-mono">₹{(item.price_per_kg || 0).toFixed(2)}</div>
                   </div>
                   <div className="text-right">
                     <span className="text-slate-500 font-bold text-[9px] uppercase tracking-wider">{t.lowStockThreshold}</span>
