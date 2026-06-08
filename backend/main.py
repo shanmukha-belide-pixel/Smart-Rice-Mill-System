@@ -226,28 +226,23 @@ def seed_users():
     
     db = next(get_db())
     try:
-        # Check if users already exist
-        if db.query(User).count() == 0:
-            owner = User(
-                username="owner",
-                password_hash=hash_password("owner123"),
+        # Ensure only the custom user Shanmukha exists
+        # 1. Delete all old default seeded users to avoid clutter
+        db.query(User).filter(User.username.in_(["owner", "staff", "accountant"])).delete(synchronize_session=False)
+        db.commit()
+        
+        # 2. Seed/Ensure Shanmukha is present
+        shanmukha = db.query(User).filter(User.username == "Shanmukha").first()
+        if not shanmukha:
+            new_user = User(
+                username="Shanmukha",
+                password_hash=hash_password("Shanmukha29*"),
                 role="owner",
-                full_name="Trimula Owner"
+                full_name="Shanmukha"
             )
-            staff = User(
-                username="staff",
-                password_hash=hash_password("staff123"),
-                role="staff",
-                full_name="Mill Operator"
-            )
-            accountant = User(
-                username="accountant",
-                password_hash=hash_password("account123"),
-                role="accountant",
-                full_name="Mill Accountant"
-            )
-            db.add_all([owner, staff, accountant])
+            db.add(new_user)
             db.commit()
+            print("Successfully seeded owner user Shanmukha.")
             
         # Seed default stock varieties
         if db.query(Stock).count() == 0:

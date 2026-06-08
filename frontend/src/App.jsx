@@ -8,8 +8,7 @@ import SmsSimulator from './components/SmsSimulator';
 import { LogOut, Flame, ShieldAlert, Sparkles, Languages } from 'lucide-react';
 import { translations } from './utils/translations';
 
-const hostname = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
-const BACKEND_URL = `http://${hostname}:8000`;
+const BACKEND_URL = 'http://127.0.0.1:8000';
 
 export default function App() {
   const [role, setRole] = useState(null); // 'owner', 'staff', 'accountant', 'public', 'customer'
@@ -322,27 +321,7 @@ export default function App() {
               </button>
             </form>
 
-            {/* Seeding credentials tip */}
-            <div className="bg-slate-950/60 border border-slate-900 p-4 rounded-xl text-[10px] text-slate-500 space-y-2">
-              <span className="font-bold text-slate-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> 
-                {language === 'te' ? 'డెమో ఖాతాలు:' : 'Default Testing Accounts:'}
-              </span>
-              <div className="grid grid-cols-1 gap-1 font-mono text-[9px]">
-                <div className="flex justify-between border-b border-slate-900 pb-1">
-                  <span>Owner (యజమాని): <span className="text-slate-300">owner</span></span>
-                  <span>PW: <span className="text-slate-300">owner123</span></span>
-                </div>
-                <div className="flex justify-between border-b border-slate-900 py-1">
-                  <span>Staff (సిబ్బంది): <span className="text-slate-300">staff</span></span>
-                  <span>PW: <span className="text-slate-300">staff123</span></span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span>Accountant (అకౌంటెంట్): <span className="text-slate-300">accountant</span></span>
-                  <span>PW: <span className="text-slate-300">account123</span></span>
-                </div>
-              </div>
-            </div>
+
           </div>
 
           {/* Quick Access to client portals */}
