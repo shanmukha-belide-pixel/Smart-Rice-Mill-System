@@ -1,6 +1,8 @@
 // Centralized Cloud JSON Storage Mock API for Smart Rice Mill System
 const MOCK_SOCKETS = new Set();
 const BIN_URL = 'https://extendsclass.com/api/json-storage/bin/ccfedec';
+let lastLocalWriteTime = 0;
+let isPolling = false;
 
 // Helper to seed default data
 const getInitialState = () => {
@@ -178,6 +180,25 @@ class MockWebSocket {
 
 let pullPromise = null;
 
+// Start background cloud sync polling
+const startBackgroundSync = () => {
+  setInterval(async () => {
+    if (document.visibilityState === 'visible' && !isPolling) {
+      if (Date.now() - lastLocalWriteTime > 5000) {
+        isPolling = true;
+        try {
+          console.log("[Mock API] Background polling cloud sync...");
+          await pullFromCloud();
+        } catch (err) {
+          console.error("[Mock API] Background sync failed:", err);
+        } finally {
+          isPolling = false;
+        }
+      }
+    }
+  }, 5000);
+};
+
 // Global fetch interceptor routing matching API routes locally
 const setupMockApi = () => {
   // First load from local cached storage (for quick load)
@@ -185,6 +206,9 @@ const setupMockApi = () => {
 
   // Asynchronously sync from cloud storage bin (so data matches across devices)
   pullPromise = pullFromCloud();
+
+  // Start background sync interval
+  startBackgroundSync();
 
   // Override WebSocket globally
   window.WebSocket = MockWebSocket;
@@ -224,6 +248,7 @@ const setupMockApi = () => {
     };
 
     const setDB = (key, data) => {
+      lastLocalWriteTime = Date.now();
       localStorage.setItem(key, JSON.stringify(data));
       // Trigger cloud sync asynchronously
       pushToCloud();
@@ -280,8 +305,7 @@ const setupMockApi = () => {
         }
         if (method === 'PUT') {
           const body = JSON.parse(init.body);
-          localStorage.setItem('ricemill_settings', JSON.stringify(body));
-          pushToCloud();
+          setDB('ricemill_settings', body);
           broadcastMockWs('REFRESH_QUEUE');
           return makeResponse(body);
         }
