@@ -5,7 +5,7 @@ import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SmsSimulator from './components/SmsSimulator';
-import { LogOut, Flame, ShieldAlert, Sparkles, Languages } from 'lucide-react';
+import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3 } from 'lucide-react';
 import { translations } from './utils/translations';
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
@@ -431,7 +431,7 @@ export default function App() {
       </header>
 
       {/* Main Body: Side-by-side Panel */}
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-hidden max-w-8xl w-full mx-auto z-10">
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-6 pb-20 md:pb-6 overflow-hidden max-w-8xl w-full mx-auto z-10">
         
         {/* Left Side: Active Route Panel */}
         <div className="flex-1 overflow-y-auto pr-1">
@@ -457,11 +457,42 @@ export default function App() {
       </main>
 
       {/* Footer ticker info */}
-      <footer className="bg-slate-950 px-6 py-3.5 border-t border-slate-900 text-[9px] text-slate-600 text-center font-mono uppercase tracking-widest">
+      <footer className="bg-slate-955 px-6 py-3.5 border-t border-slate-900 text-[9px] text-slate-600 text-center font-mono uppercase tracking-widest">
         {language === 'te' 
           ? 'శ్రీ తిరుమల రైస్ మిల్ కన్సోల్ • 30 నిమిషాల నిష్క్రియ తర్వాత సెషన్ స్వయంచాలకంగా లాక్ చేయబడుతుంది'
           : 'Sri Trimula Mill console • Session automatically locks after 30 minutes of inactivity'}
       </footer>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-slate-900/80 backdrop-blur-lg border-t border-slate-800/80 py-3 px-6 flex justify-around items-center z-50 shadow-2xl">
+        {canAccessTab('dashboard') && (
+          <button
+            onClick={() => setCurrentTab('dashboard')}
+            className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 cursor-pointer"
+          >
+            <Ticket className={`w-5 h-5 ${currentTab === 'dashboard' ? 'text-emerald-400' : ''}`} />
+            <span className={`text-[9px] uppercase tracking-wider font-semibold ${currentTab === 'dashboard' ? 'text-emerald-450 font-bold' : ''}`}>{t.tokenBoard}</span>
+          </button>
+        )}
+        {canAccessTab('stock') && (
+          <button
+            onClick={() => setCurrentTab('stock')}
+            className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 cursor-pointer"
+          >
+            <Package className={`w-5 h-5 ${currentTab === 'stock' ? 'text-emerald-400' : ''}`} />
+            <span className={`text-[9px] uppercase tracking-wider font-semibold ${currentTab === 'stock' ? 'text-emerald-450 font-bold' : ''}`}>{t.inventory}</span>
+          </button>
+        )}
+        {canAccessTab('reports') && (
+          <button
+            onClick={() => setCurrentTab('reports')}
+            className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 cursor-pointer"
+          >
+            <BarChart3 className={`w-5 h-5 ${currentTab === 'reports' ? 'text-emerald-400' : ''}`} />
+            <span className={`text-[9px] uppercase tracking-wider font-semibold ${currentTab === 'reports' ? 'text-emerald-450 font-bold' : ''}`}>{t.financials}</span>
+          </button>
+        )}
+      </nav>
 
     </div>
   );
