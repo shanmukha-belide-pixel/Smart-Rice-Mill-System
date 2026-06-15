@@ -6,6 +6,7 @@ import { translations } from '../utils/translations';
 export default function Reports({ backendUrl, userToken, language }) {
   const [dailyData, setDailyData] = useState(null);
   const [trends, setTrends] = useState(null);
+  const [stock, setStock] = useState([]);
   const [exporting, setExporting] = useState(null); // 'pdf' or 'excel'
 
   const t = translations[language || 'te'];
@@ -27,6 +28,14 @@ export default function Reports({ backendUrl, userToken, language }) {
         const tData = await trendsRes.json();
         setTrends(tData);
       }
+
+      const stockRes = await fetch(`${backendUrl}/api/stock`, {
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      });
+      if (stockRes.ok) {
+        const sData = await stockRes.json();
+        setStock(sData);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -36,7 +45,7 @@ export default function Reports({ backendUrl, userToken, language }) {
     fetchReports();
 
     const handleStorageChange = (e) => {
-      if (e.key === 'ricemill_sales' || e.key === 'ricemill_tokens') {
+      if (e.key === 'ricemill_sales' || e.key === 'ricemill_tokens' || e.key === 'ricemill_stock') {
         fetchReports();
       }
     };
@@ -50,7 +59,7 @@ export default function Reports({ backendUrl, userToken, language }) {
     function connect() {
       socket = new WebSocket(wsUrl);
       socket.onmessage = (e) => {
-        if (e.data === 'REFRESH_QUEUE' || e.data === 'REFRESH_REPORTS') {
+        if (e.data === 'REFRESH_QUEUE' || e.data === 'REFRESH_REPORTS' || e.data === 'REFRESH_STOCK') {
           fetchReports();
         }
       };
@@ -68,6 +77,12 @@ export default function Reports({ backendUrl, userToken, language }) {
   const triggerExport = (type) => {
     setExporting(type);
     
+    const totalInventoryValue = (stock || []).reduce((sum, item) => {
+      const qty = parseFloat(item.quantity_kg) || 0;
+      const price = parseFloat(item.price_per_kg) || 0;
+      return sum + (qty * price);
+    }, 0);
+    
     if (type === 'excel') {
       try {
         // Construct CSV rows
@@ -78,8 +93,19 @@ export default function Reports({ backendUrl, userToken, language }) {
         csvContent += "--- Daily Highlights ---\n";
         csvContent += `Total Revenue (₹),${dailyData.total_revenue || 0}\n`;
         csvContent += `Tokens Served,${dailyData.tokens_served || 0}\n`;
+        csvContent += `Current Stock Inventory Value (₹),${totalInventoryValue.toFixed(1)}\n`;
         csvContent += `No Shows,${dailyData.no_shows || 0}\n`;
         csvContent += `No Show Rate,${(dailyData.no_show_rate || 0).toFixed(1)}%\n\n`;
+        
+        csvContent += "--- Current Stock Inventory Valuation ---\n";
+        csvContent += "Rice Variety,Category,Remaining Stock (kg),Bags (10kg),Price per kg (₹),Asset Value (₹)\n";
+        (stock || []).forEach(item => {
+          const qty = parseFloat(item.quantity_kg) || 0;
+          const price = parseFloat(item.price_per_kg) || 0;
+          const val = qty * price;
+          csvContent += `${item.variety_name},${item.category || 'milled_rice'},${qty.toFixed(1)},${(qty / 10).toFixed(1)},${price.toFixed(2)},${val.toFixed(2)}\n`;
+        });
+        csvContent += "\n";
         
         csvContent += "--- Revenue Collection Split ---\n";
         csvContent += "Payment Mode,Amount (₹)\n";
@@ -146,11 +172,11 @@ export default function Reports({ backendUrl, userToken, language }) {
                   text-transform: uppercase;
                 }
                 .highlight-grid {
-                  display: grid;
-                  grid-template-cols: repeat(4, 1fr);
-                  gap: 20px;
-                  margin-bottom: 40px;
-                }
+                display: grid;
+                grid-template-cols: repeat(5, 1fr);
+                gap: 15px;
+                margin-bottom: 40px;
+              }
                 .highlight-card {
                   background: #f8fafc;
                   border: 1px solid #e2e8f0;
@@ -229,6 +255,10 @@ export default function Reports({ backendUrl, userToken, language }) {
                   <div class="card-value">₹${(dailyData.total_revenue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                 </div>
                 <div class="highlight-card">
+                  <div class="card-title">Inventory Value</div>
+                  <div class="card-value">₹${totalInventoryValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+                <div class="highlight-card">
                   <div class="card-title">Tokens Served</div>
                   <div class="card-value">${dailyData.tokens_served || 0}</div>
                 </div>
@@ -277,6 +307,37 @@ export default function Reports({ backendUrl, userToken, language }) {
                         <td>${variety}</td>
                         <td class="numeric">${qtyVal.toFixed(1)} kg</td>
                         <td class="numeric">${(qtyVal / 10).toFixed(0)} bags</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+
+              <h2>Current Stock Inventory Valuation</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Variety Name</th>
+                    <th>Category</th>
+                    <th class="numeric">Remaining Stock (kg)</th>
+                    <th class="numeric">Bags</th>
+                    <th class="numeric">Price per kg</th>
+                    <th class="numeric">Asset Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(stock || []).map(item => {
+                    const qty = parseFloat(item.quantity_kg) || 0;
+                    const price = parseFloat(item.price_per_kg) || 0;
+                    const assetVal = qty * price;
+                    return `
+                      <tr>
+                        <td>${item.variety_name}</td>
+                        <td>${(item.category || 'milled_rice').replace('_', ' ').toUpperCase()}</td>
+                        <td class="numeric">${qty.toFixed(1)} kg</td>
+                        <td class="numeric">${(qty / 10).toFixed(1)}</td>
+                        <td class="numeric">₹${price.toFixed(2)}</td>
+                        <td class="numeric">₹${assetVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                       </tr>
                     `;
                   }).join('')}
@@ -348,7 +409,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       </div>
 
       {/* Daily Highlights Summary Box */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Rev */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
@@ -363,12 +424,28 @@ export default function Reports({ backendUrl, userToken, language }) {
           </div>
         </div>
 
+        {/* Inventory Value */}
+        <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
+          <div className="space-y-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">
+              {language === 'te' ? 'ఇన్వెంటరీ విలువ' : 'Inventory Value'}
+            </span>
+            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">₹{totalInventoryValue.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</h3>
+            <span className="text-[9px] text-amber-400 font-bold flex items-center gap-0.5">
+              <ArrowUpRight className="w-3.5 h-3.5" /> {language === 'te' ? 'నిల్వ ఆస్తుల విలువ' : 'Current asset value'}
+            </span>
+          </div>
+          <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/10">
+            <IndianRupee className="w-6 h-6 text-amber-400 stroke-1" />
+          </div>
+        </div>
+
         {/* Tokens served */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.tokensServed}</span>
             <h3 className="text-2xl font-extrabold text-slate-100 font-mono">{dailyData.tokens_served || 0}</h3>
-            <span className="text-[9px] text-slate-450 font-semibold">{language === 'te' ? 'కీప్యాడ్ / ఉచిత ఫోన్ ద్వారా కనెక్షన్లు' : '100% feature-phone queries'}</span>
+            <span className="text-[9px] text-slate-450 font-semibold">{language === 'te' ? 'కీప్యాడ్ / ఉచిత ఫోన్ కనెక్షన్లు' : '100% feature-phone queries'}</span>
           </div>
           <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/10">
             <Users className="w-6 h-6 text-blue-400 stroke-1" />
@@ -383,7 +460,7 @@ export default function Reports({ backendUrl, userToken, language }) {
               {Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0).toFixed(0)} kg
             </h3>
             <span className="text-[9px] text-slate-450 font-semibold font-mono">
-              ~{(Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0) / 10).toFixed(0)} {language === 'te' ? 'సంచులు సర్వ్ చేయబడ్డాయి' : 'bags checkout'}
+              ~{(Object.values(dailyData.stock_consumed || {}).reduce((a, b) => a + b, 0) / 10).toFixed(0)} {language === 'te' ? 'సంచులు చెక్అవుట్' : 'bags checkout'}
             </span>
           </div>
           <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/10">
@@ -554,6 +631,55 @@ export default function Reports({ backendUrl, userToken, language }) {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Live Stock Inventory Valuation Table */}
+      <div className="glass-panel p-6 rounded-3xl border border-slate-800/80 shadow-xl space-y-4 relative">
+        <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent" />
+        <div>
+          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-200">
+            {language === 'te' ? 'ప్రస్తుత నిల్వ ఆస్తుల విలువ' : 'Current Stock Inventory Valuation'}
+          </h3>
+          <p className="text-[10px] text-slate-500 font-mono">
+            {language === 'te' ? 'మిగిలిన నిల్వ పరిమాణము, ధరలు మరియు ఆస్తి విలువ నివేదిక' : 'Live remaining quantities, prices, and asset valuations in real time'}
+          </p>
+        </div>
+        <div className="overflow-x-auto pt-2">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-850 text-[10px] uppercase font-bold text-slate-500">
+                <th className="py-3 px-3">Variety Name</th>
+                <th className="py-3 px-3">Category</th>
+                <th className="py-3 px-3 text-right">Remaining Stock</th>
+                <th className="py-3 px-3 text-right">Bags (10kg)</th>
+                <th className="py-3 px-3 text-right">Price per kg</th>
+                <th className="py-3 px-3 text-right">Asset Value</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-850 text-slate-300">
+              {(stock || []).map((item) => {
+                const qty = parseFloat(item.quantity_kg) || 0;
+                const price = parseFloat(item.price_per_kg) || 0;
+                const val = qty * price;
+                return (
+                  <tr key={item.id} className="hover:bg-slate-900/10 transition-colors">
+                    <td className="py-3 px-3 font-semibold text-slate-200">{item.variety_name}</td>
+                    <td className="py-3 px-3 text-slate-500 text-[10px] uppercase">{item.category ? item.category.replace('_', ' ') : 'Milled Rice'}</td>
+                    <td className="py-3 px-3 text-right font-mono font-bold">{qty.toFixed(1)} kg</td>
+                    <td className="py-3 px-3 text-right font-mono text-slate-500">{(qty / 10).toFixed(1)}</td>
+                    <td className="py-3 px-3 text-right font-mono">₹{price.toFixed(2)}</td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-450">₹{val.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
+                  </tr>
+                );
+              })}
+              {(!stock || stock.length === 0) && (
+                <tr>
+                  <td colSpan="6" className="py-6 text-center text-slate-500">No stock inventory data available</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

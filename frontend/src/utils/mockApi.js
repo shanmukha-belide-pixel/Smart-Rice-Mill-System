@@ -1,145 +1,16 @@
 // Centralized Cloud JSON Storage Mock API for Smart Rice Mill System
+import { 
+  getDbState, 
+  updateSettings, 
+  updateStock, 
+  updateTokens, 
+  updateSales, 
+  updatePriceHistory, 
+  updateSmsInbox, 
+  updateLockedAccounts 
+} from './firebaseService.js';
+
 const MOCK_SOCKETS = new Set();
-const BIN_URL = 'https://extendsclass.com/api/json-storage/bin/ccfedec';
-let lastLocalWriteTime = 0;
-let isPolling = false;
-
-// Helper to seed default data
-const getInitialState = () => {
-  return {
-    settings: {
-      id: 1,
-      mill_name: 'Sri Trimula Rice Mill',
-      virtual_number: '+917075295440',
-      holiday_mode: false,
-      queue_hold: false,
-      avg_service_time: 8,
-      sms_gateway_active: true
-    },
-    stock: [
-      { id: 1, variety_name: 'Basmati', quantity_kg: 500, price_per_kg: 120, low_stock_threshold: 50 },
-      { id: 2, variety_name: 'Sona Masuri', quantity_kg: 800, price_per_kg: 55, low_stock_threshold: 100 },
-      { id: 3, variety_name: 'Sharbati', quantity_kg: 300, price_per_kg: 75, low_stock_threshold: 50 }
-    ],
-    tokens: [],
-    sales: [],
-    price_history: [],
-    sms_inbox: [],
-    locked_accounts: []
-  };
-};
-
-// Seed LocalStorage database keys with defaults safely
-const initMockDatabase = () => {
-  const defaults = getInitialState();
-  
-  const checkAndSeed = (key, defaultVal) => {
-    try {
-      const val = localStorage.getItem(key);
-      if (!val || val === 'undefined' || val === 'null') {
-        localStorage.setItem(key, JSON.stringify(defaultVal));
-      }
-    } catch (e) {
-      localStorage.setItem(key, JSON.stringify(defaultVal));
-    }
-  };
-
-  checkAndSeed('ricemill_settings', defaults.settings);
-  checkAndSeed('ricemill_stock', defaults.stock);
-  checkAndSeed('ricemill_tokens', defaults.tokens);
-  checkAndSeed('ricemill_sales', defaults.sales);
-  checkAndSeed('ricemill_price_history', defaults.price_history);
-  checkAndSeed('ricemill_sms_inbox', defaults.sms_inbox);
-  checkAndSeed('ricemill_locked_accounts', defaults.locked_accounts);
-};
-
-// Push local state to cloud JSON bin safely
-const pushToCloud = async () => {
-  try {
-    const defaults = getInitialState();
-    
-    const getCleanKey = (key, defaultVal) => {
-      try {
-        const val = localStorage.getItem(key);
-        if (!val || val === 'undefined' || val === 'null') return defaultVal;
-        return JSON.parse(val) || defaultVal;
-      } catch (e) {
-        return defaultVal;
-      }
-    };
-
-    const state = {
-      settings: getCleanKey('ricemill_settings', defaults.settings),
-      stock: getCleanKey('ricemill_stock', defaults.stock),
-      tokens: getCleanKey('ricemill_tokens', defaults.tokens),
-      sales: getCleanKey('ricemill_sales', defaults.sales),
-      price_history: getCleanKey('ricemill_price_history', defaults.price_history),
-      sms_inbox: getCleanKey('ricemill_sms_inbox', defaults.sms_inbox),
-      locked_accounts: getCleanKey('ricemill_locked_accounts', defaults.locked_accounts)
-    };
-    
-    await fetch(BIN_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    });
-    console.log("[Mock API] Centralized Cloud Sync saved successfully.");
-  } catch (err) {
-    console.error("[Mock API] Centralized Cloud Sync save failed:", err);
-  }
-};
-
-// Pull state from cloud JSON bin on boot safely
-const pullFromCloud = async () => {
-  try {
-    const res = await fetch(`${BIN_URL}?nocache=${Date.now()}`, {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
-    if (res.ok) {
-      const state = await res.json();
-      // If server returned status (wrapped) or raw data
-      const data = state.data ? JSON.parse(state.data) : state;
-      if (data && typeof data === 'object') {
-        const defaults = getInitialState();
-        
-        // Sanitize and default settings
-        const settings = (data.settings && typeof data.settings === 'object')
-          ? { ...defaults.settings, ...data.settings }
-          : defaults.settings;
-
-        const sanitizeArray = (arr, fallback) => Array.isArray(arr) ? arr : fallback;
-
-        const stock = sanitizeArray(data.stock, defaults.stock);
-        const tokens = sanitizeArray(data.tokens, defaults.tokens);
-        const sales = sanitizeArray(data.sales, defaults.sales);
-        const price_history = sanitizeArray(data.price_history, defaults.price_history);
-        const sms_inbox = sanitizeArray(data.sms_inbox, defaults.sms_inbox);
-        const locked_accounts = sanitizeArray(data.locked_accounts, defaults.locked_accounts);
-
-        localStorage.setItem('ricemill_settings', JSON.stringify(settings));
-        localStorage.setItem('ricemill_stock', JSON.stringify(stock));
-        localStorage.setItem('ricemill_tokens', JSON.stringify(tokens));
-        localStorage.setItem('ricemill_sales', JSON.stringify(sales));
-        localStorage.setItem('ricemill_price_history', JSON.stringify(price_history));
-        localStorage.setItem('ricemill_sms_inbox', JSON.stringify(sms_inbox));
-        localStorage.setItem('ricemill_locked_accounts', JSON.stringify(locked_accounts));
-        
-        console.log("[Mock API] Centralized Cloud Sync load completed.");
-        broadcastMockWs('REFRESH_QUEUE');
-      } else {
-        // Bin is empty, seed defaults locally first, then push to cloud
-        initMockDatabase();
-        await pushToCloud();
-      }
-    }
-  } catch (err) {
-    console.error("[Mock API] Centralized Cloud Sync load failed:", err);
-    initMockDatabase();
-  }
-};
 
 // WebSocket broadcaster to sync frontend views in real-time
 const broadcastMockWs = (message) => {
@@ -178,37 +49,10 @@ class MockWebSocket {
   }
 }
 
-let pullPromise = null;
-
-// Start background cloud sync polling
-const startBackgroundSync = () => {
-  setInterval(async () => {
-    if (document.visibilityState === 'visible' && !isPolling) {
-      if (Date.now() - lastLocalWriteTime > 5000) {
-        isPolling = true;
-        try {
-          console.log("[Mock API] Background polling cloud sync...");
-          await pullFromCloud();
-        } catch (err) {
-          console.error("[Mock API] Background sync failed:", err);
-        } finally {
-          isPolling = false;
-        }
-      }
-    }
-  }, 5000);
-};
-
 // Global fetch interceptor routing matching API routes locally
 const setupMockApi = () => {
-  // First load from local cached storage (for quick load)
-  initMockDatabase();
-
-  // Asynchronously sync from cloud storage bin (so data matches across devices)
-  pullPromise = pullFromCloud();
-
-  // Start background sync interval
-  startBackgroundSync();
+  // Bind broadcaster to window so firebaseService can call it
+  window.broadcastMockWs = broadcastMockWs;
 
   // Override WebSocket globally
   window.WebSocket = MockWebSocket;
@@ -222,36 +66,52 @@ const setupMockApi = () => {
       return originalFetch(input, init);
     }
 
-    // Wait for initial cloud sync to complete before responding to API requests
-    if (pullPromise) {
-      try {
-        await pullPromise;
-      } catch (err) {
-        console.error("[Mock API] Error waiting for initial cloud sync:", err);
-      }
-    }
-
     const urlObj = new URL(urlStr);
     const path = urlObj.pathname;
     const method = (init && init.method || 'GET').toUpperCase();
     
     console.log(`[Mock API Intercept] ${method} ${path}`);
 
+    // Read directly from firebaseService in-memory state
     const getDB = (key, fallback = []) => {
-      try {
-        const val = localStorage.getItem(key);
-        if (!val || val === 'undefined' || val === 'null') return fallback;
-        return JSON.parse(val) || fallback;
-      } catch (e) {
-        return fallback;
+      const dbState = getDbState();
+      switch (key) {
+        case 'ricemill_settings': return dbState.settings || fallback;
+        case 'ricemill_stock': return dbState.stock || fallback;
+        case 'ricemill_tokens': return dbState.tokens || fallback;
+        case 'ricemill_sales': return dbState.sales || fallback;
+        case 'ricemill_price_history': return dbState.price_history || fallback;
+        case 'ricemill_sms_inbox': return dbState.sms_inbox || fallback;
+        case 'ricemill_locked_accounts': return dbState.locked_accounts || fallback;
+        default: return fallback;
       }
     };
 
+    // Write directly to firebaseService mutators
     const setDB = (key, data) => {
-      lastLocalWriteTime = Date.now();
-      localStorage.setItem(key, JSON.stringify(data));
-      // Trigger cloud sync asynchronously
-      pushToCloud();
+      switch (key) {
+        case 'ricemill_settings':
+          updateSettings(data);
+          break;
+        case 'ricemill_stock':
+          updateStock(data);
+          break;
+        case 'ricemill_tokens':
+          updateTokens(data);
+          break;
+        case 'ricemill_sales':
+          updateSales(data);
+          break;
+        case 'ricemill_price_history':
+          updatePriceHistory(data);
+          break;
+        case 'ricemill_sms_inbox':
+          updateSmsInbox(data);
+          break;
+        case 'ricemill_locked_accounts':
+          updateLockedAccounts(data);
+          break;
+      }
     };
 
     const makeResponse = (data, status = 200) => {
@@ -262,7 +122,7 @@ const setupMockApi = () => {
     };
 
     try {
-      // 1. Auth Endpoint
+      // 1. Auth Endpoint (Only Admin Console login allowed)
       if (path === '/api/auth/login') {
         const body = JSON.parse(init.body);
         const username = body.username ? body.username.trim().toLowerCase() : '';
@@ -276,20 +136,6 @@ const setupMockApi = () => {
               role: 'owner',
               full_name: 'Shanmukha'
             });
-          } else if (username === 'staff') {
-            return makeResponse({
-              access_token: 'mock_jwt_token_for_staff',
-              token_type: 'bearer',
-              role: 'staff',
-              full_name: 'Staff User'
-            });
-          } else if (username === 'accountant') {
-            return makeResponse({
-              access_token: 'mock_jwt_token_for_accountant',
-              token_type: 'bearer',
-              role: 'accountant',
-              full_name: 'Accountant User'
-            });
           }
         }
         return makeResponse({ detail: 'Invalid username or password' }, 401);
@@ -297,11 +143,9 @@ const setupMockApi = () => {
 
       // 2. Settings Endpoints
       if (path === '/api/settings') {
-        const defaults = getInitialState().settings;
+        const defaultSettings = getDbState().settings;
         if (method === 'GET') {
-          const settingsVal = localStorage.getItem('ricemill_settings');
-          const settings = settingsVal ? JSON.parse(settingsVal) : defaults;
-          return makeResponse({ ...defaults, ...settings });
+          return makeResponse(getDB('ricemill_settings', defaultSettings));
         }
         if (method === 'PUT') {
           const body = JSON.parse(init.body);
@@ -322,7 +166,6 @@ const setupMockApi = () => {
       if (path === '/api/stock') {
         if (method === 'GET') {
           const stock = getDB('ricemill_stock');
-          // Sanitize stock items to guarantee numbers for calculation
           const stockWithBags = stock.map(s => {
             const quantity = typeof s.quantity_kg === 'number' ? s.quantity_kg : parseFloat(s.quantity_kg) || 0;
             const price = typeof s.price_per_kg === 'number' ? s.price_per_kg : parseFloat(s.price_per_kg) || 0;
@@ -461,8 +304,7 @@ const setupMockApi = () => {
         if (method === 'POST') {
           const body = JSON.parse(init.body);
           const tokens = getDB('ricemill_tokens');
-          const settingsVal = localStorage.getItem('ricemill_settings');
-          const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+          const settings = getDB('ricemill_settings');
 
           if (settings && settings.holiday_mode) {
             return makeResponse({ detail: 'Holiday mode active' }, 400);
@@ -476,6 +318,7 @@ const setupMockApi = () => {
             id: tokens.length + 1,
             token_number: tokenNum,
             phone_number: body.phone_number || '+910000000000',
+            customer_name: body.customer_name || `Customer #${tokens.length + 1}`,
             status: 'waiting',
             priority: body.priority || false,
             priority_reason: body.priority_reason || null,
@@ -525,8 +368,7 @@ const setupMockApi = () => {
             tokens[nextIndex].called_at = new Date().toISOString();
             setDB('ricemill_tokens', tokens);
 
-            const settingsVal = localStorage.getItem('ricemill_settings');
-            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+            const settings = getDB('ricemill_settings');
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
@@ -595,6 +437,7 @@ const setupMockApi = () => {
             const newSale = {
               id: sales.length + 1,
               token_number: tokens[tokenIdx].token_number,
+              customer_name: tokens[tokenIdx].customer_name || 'Customer',
               variety_name: body.variety_name,
               quantity_kg: reqQty,
               price_per_kg: reqPrice,
@@ -606,8 +449,7 @@ const setupMockApi = () => {
             sales.push(newSale);
             setDB('ricemill_sales', sales);
 
-            const settingsVal = localStorage.getItem('ricemill_settings');
-            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+            const settings = getDB('ricemill_settings');
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
@@ -628,8 +470,7 @@ const setupMockApi = () => {
             tokens[tokenIdx].no_show_at = new Date().toISOString();
             setDB('ricemill_tokens', tokens);
 
-            const settingsVal = localStorage.getItem('ricemill_settings');
-            const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+            const settings = getDB('ricemill_settings');
             const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
@@ -667,7 +508,6 @@ const setupMockApi = () => {
         const tokens = getDB('ricemill_tokens');
         const todayStr = new Date().toDateString();
 
-        // Filter to only count items created/saved today
         const todayTokens = tokens.filter(t => new Date(t.created_at || new Date()).toDateString() === todayStr);
         const todaySales = sales.filter(s => new Date(s.created_at || new Date()).toDateString() === todayStr);
 
@@ -702,7 +542,6 @@ const setupMockApi = () => {
       if (path === '/api/reports/trends') {
         const sales = getDB('ricemill_sales');
         
-        // 1. Generate the last 7 calendar days dynamically
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weekly_revenue = [];
         const today = new Date();
@@ -714,7 +553,6 @@ const setupMockApi = () => {
           const dayName = daysOfWeek[d.getDay()];
           const dateStr = d.toLocaleDateString('en-IN');
           
-          // Find real sales in DB for this day
           const daySales = sales.filter(s => {
             const saleDate = new Date(s.created_at || new Date());
             return saleDate.toDateString() === d.toDateString();
@@ -731,7 +569,6 @@ const setupMockApi = () => {
           });
         }
 
-        // 2. Aggregate peak hours dynamically from actual sales
         const time_blocks = {
           "06-08 AM": 0, "08-10 AM": 0, "10-12 PM": 0, "12-02 PM": 0,
           "02-04 PM": 0, "04-06 PM": 0, "06-08 PM": 0
@@ -749,7 +586,6 @@ const setupMockApi = () => {
         });
         const peak_hours = Object.entries(time_blocks).map(([hour, count]) => ({ hour, count }));
 
-        // 3. Aggregate variety splits dynamically from actual sales
         const variety_sales = {};
         sales.forEach(s => {
           variety_sales[s.variety_name] = (variety_sales[s.variety_name] || 0) + (parseFloat(s.quantity_kg) || 0);
@@ -791,8 +627,7 @@ const setupMockApi = () => {
         const bodyText = params.get('Body') || '';
         const cleanCmd = bodyText.trim().toUpperCase();
 
-        const settingsVal = localStorage.getItem('ricemill_settings');
-        const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+        const settings = getDB('ricemill_settings');
         const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
         const smsInbox = getDB('ricemill_sms_inbox');
 
@@ -829,6 +664,7 @@ const setupMockApi = () => {
             id: tokens.length + 1,
             token_number: tokenNum,
             phone_number: from,
+            customer_name: `Customer #${tokens.length + 1}`,
             status: 'waiting',
             priority: false,
             priority_reason: null,
@@ -893,8 +729,7 @@ const setupMockApi = () => {
         const from = params.get('From') || '+910000000000';
         
         const tokens = getDB('ricemill_tokens');
-        const settingsVal = localStorage.getItem('ricemill_settings');
-        const settings = settingsVal ? JSON.parse(settingsVal) : getInitialState().settings;
+        const settings = getDB('ricemill_settings');
         const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
 
         if (settings && settings.holiday_mode) {
@@ -918,6 +753,7 @@ const setupMockApi = () => {
           id: tokens.length + 1,
           token_number: tokenNum,
           phone_number: from,
+          customer_name: `Customer #${tokens.length + 1}`,
           status: 'waiting',
           priority: false,
           priority_reason: null,
