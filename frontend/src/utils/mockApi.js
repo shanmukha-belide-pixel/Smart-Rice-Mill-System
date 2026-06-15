@@ -61,8 +61,14 @@ const setupMockApi = () => {
   window.fetch = async (input, init) => {
     const urlStr = typeof input === 'string' ? input : input.url;
     
-    // Skip if not an API call
-    if (!urlStr.includes('/api/')) {
+    // Only intercept local API calls matching our backend port or relative paths
+    const isLocalApi = urlStr.startsWith('/api/') || 
+                       urlStr.startsWith(window.location.origin + '/api/') ||
+                       urlStr.startsWith('http://127.0.0.1:8000/api/') ||
+                       urlStr.startsWith('http://localhost:8000/api/') ||
+                       (urlStr.includes('/api/') && !urlStr.includes('extendsclass.com'));
+
+    if (!isLocalApi) {
       return originalFetch(input, init);
     }
 
