@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, Phone, Clock, AlertTriangle, Shield, Check, ListFilter, Play } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Phone, Clock, AlertTriangle, Shield, Check, ListFilter, Play, RefreshCw } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function Settings({ backendUrl, userToken, language }) {
@@ -305,6 +305,61 @@ export default function Settings({ backendUrl, userToken, language }) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* SMS & Missed Call Webhook Workflow Panel */}
+          <div className="glass-panel p-5 rounded-3xl border border-slate-800/80 shadow-xl space-y-4 relative">
+            <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent" />
+            
+            <div className="flex items-center gap-2.5 border-b border-slate-850/60 pb-3">
+              <RefreshCw className="w-5 h-5 text-emerald-500 animate-spin-slow" />
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
+                {language === 'te' ? 'ఆటోమేటెడ్ SMS & మిస్డ్ కాల్ వర్క్‌ఫ్లో గైడ్' : 'Automated SMS & Missed Call Workflow Guide'}
+              </h4>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+              {language === 'te' 
+                ? 'శ్రీ తిరుమల రైస్ మిల్ సిస్టమ్ ఎస్ఎమ్ఎస్ మరియు మిస్డ్ కాల్ గేట్‌వేలతో అనుసంధానించబడి ఉంది. వర్క్‌ఫ్లో క్రింది విధంగా పనిచేస్తుంది:' 
+                : 'Sri Trimula Rice Mill System is integrated with SMS and Missed Call gateways. The automation workflow operates as follows:'}
+            </p>
+
+            <div className="space-y-3 pt-1">
+              {/* Step 1 */}
+              <div className="bg-slate-955/60 border border-slate-900 rounded-2xl p-3.5 space-y-1">
+                <span className="text-[9px] text-emerald-450 uppercase tracking-widest font-black block">Step 1: Missed Call / SMS Commands</span>
+                <p className="text-[10.5px] text-slate-300 leading-relaxed font-sans">
+                  {language === 'te'
+                    ? '1. మిస్డ్ కాల్: కస్టమర్ నిర్దేశించిన వర్చువల్ నంబర్‌కు మిస్డ్ కాల్ ఇవ్వడం ద్వారా టోకెన్ వెంటనే ఉచితంగా రిజిస్టర్ అవుతుంది. (Webhook URL: /api/webhooks/missed-call)'
+                    : '1. Missed Call: Customers dial the virtual number to instantly register a queue token at zero cost. (Webhook URL: /api/webhooks/missed-call)'}
+                </p>
+                <p className="text-[10.5px] text-slate-350 leading-relaxed pt-1.5 border-t border-slate-900/60 font-sans">
+                  {language === 'te'
+                    ? '2. SMS ఆదేశాలు: కస్టమర్ "TOKEN" (రిజిస్టర్), "PRICE" (ధరలు), "STATUS" (స్థితి), లేదా "STOP" (రద్దు) వంటి ఆదేశాలను పంపవచ్చు. (Webhook URL: /api/webhooks/sms)'
+                    : '2. SMS Commands: Customers send command keywords like "TOKEN" (register), "PRICE" (rates), "STATUS" (track position), or "STOP" (cancel). (Webhook URL: /api/webhooks/sms)'}
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="bg-slate-955/60 border border-slate-900 rounded-2xl p-3.5 space-y-1">
+                <span className="text-[9px] text-emerald-450 uppercase tracking-widest font-black block">Step 2: Auto-Response Messaging</span>
+                <p className="text-[10.5px] text-slate-300 leading-relaxed font-sans">
+                  {language === 'te'
+                    ? 'బ్యాకెండ్ కస్టమర్ రిクエストను ప్రాసెస్ చేసి, స్వయంచాలకంగా టోకెన్ నంబర్ మరియు అంచనా వేసిన నిరీక్షణ సమయంతో కూడిన SMSను పంపుతుంది.'
+                    : 'The backend processes requests and auto-responds with token details and estimated wait times.'}
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="bg-slate-955/60 border border-slate-900 rounded-2xl p-3.5 space-y-1">
+                <span className="text-[9px] text-emerald-450 uppercase tracking-widest font-black block">Step 3: Zapier Payment Billings</span>
+                <p className="text-[10.5px] text-slate-300 leading-relaxed font-sans">
+                  {language === 'te'
+                    ? 'చెక్అవుట్ వద్ద UPI/Card ద్వారా చెల్లింపు పూర్తయినప్పుడు, అది Zapier వెబ్‌హుక్ (Webhook URL: /api/webhooks/payment)ను ప్రేరేపించి కస్టమర్ మొబైల్‌కు బిల్లు వివరాల SMS పంపుతుంది.'
+                    : 'Upon serving via UPI/Card checkouts, the transaction triggers a Zapier Catch Hook (Webhook URL: /api/webhooks/payment) to dispatch customer digital bills.'}
+                </p>
+              </div>
             </div>
           </div>
 

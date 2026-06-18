@@ -225,6 +225,42 @@ export default function App() {
     }
   };
 
+  const performAutoLogin = async (username, password) => {
+    setLoading(true);
+    setLoginError('');
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.access_token);
+        setRole(data.role);
+        setFullName(data.full_name);
+        
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('name', data.full_name);
+
+        if (data.role === 'staff') setCurrentTab('dashboard');
+        else if (data.role === 'accountant') setCurrentTab('reports');
+        else setCurrentTab('dashboard');
+
+        setupSessionTimeout();
+      } else {
+        const err = await res.json();
+        setLoginError(err.detail || 'Login failed.');
+      }
+    } catch (err) {
+      setLoginError('Could not connect to backend server. Make sure API is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     setToken(null);
     setRole(null);
@@ -550,6 +586,17 @@ export default function App() {
               </button>
             </form>
 
+            {/* Quick Auto Login */}
+            <div className="pt-4 border-t border-slate-900/60 mt-4">
+              <button
+                type="button"
+                onClick={() => performAutoLogin('Shanmukha', 'Shanmukha29*')}
+                disabled={loading}
+                className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold rounded-xl text-xs border border-emerald-900/25 hover:border-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+              >
+                ⚡ {language === 'te' ? 'యజమానిగా ఆటో లాగిన్ (Auto Login)' : 'Auto Login as Owner'}
+              </button>
+            </div>
 
           </div>
 
@@ -586,14 +633,6 @@ export default function App() {
       {/* Decorative blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
-      
-      {/* Connectivity Banner */}
-      {!isConnected && (
-        <div className="bg-rose-950/90 text-rose-200 text-xs px-6 py-2.5 text-center font-bold border-b border-rose-900/30 flex items-center justify-center gap-2 z-50 relative">
-          <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_red] animate-pulse" />
-          <span>{language === 'te' ? '🔴 ఆఫ్‌లైన్ - ఇంటర్నెట్ కనెక్షన్ లేదు. డేటా లోకల్‌గా సేవ్ చేయబడుతోంది.' : '🔴 Offline - No internet connection. Data is saved locally.'}</span>
-        </div>
-      )}
       
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-10">
