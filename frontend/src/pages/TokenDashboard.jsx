@@ -811,7 +811,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       {/* SERVE / CHECKOUT TRANSACTION MODAL */}
       {showServeModal && servingToken && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-slate-800/80 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl animate-fade-in relative flex flex-col">
+          <div className="bg-slate-900 border border-slate-800/80 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-hidden shadow-2xl animate-fade-in relative flex flex-col">
             <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
             
             {/* Modal Header */}
@@ -870,8 +870,9 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
             )}
 
             {/* Serve Form */}
-            <form onSubmit={handleConfirmServe} className="p-6 space-y-4">
-              {errorMsg && (
+            <form onSubmit={handleConfirmServe} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 pr-3 scrollbar-thin">
+                {errorMsg && (
                 <div className="bg-rose-955/40 border border-rose-900/25 text-rose-300 p-3 rounded-xl text-xs flex items-center gap-2">
                   <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0" />
                   <span>{errorMsg}</span>
@@ -1025,9 +1026,10 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                   )}
                 </div>
               )}
+              </div>
 
               {/* Footer Controls */}
-              <div className="flex gap-3 pt-4 border-t border-slate-850">
+              <div className="p-6 border-t border-slate-850 bg-slate-950 flex gap-3 mt-auto">
                 <button
                   type="button"
                   onClick={() => setShowServeModal(false)}
