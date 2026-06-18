@@ -618,7 +618,7 @@ export default function Reports({ backendUrl, userToken, language }) {
               return (
                 <div key={mode} className="space-y-1.5 animate-slide-in">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-400 font-semibold">{mode === 'Cash' ? t.cash : mode === 'UPI' ? t.upi : t.credit}</span>
+                    <span className="text-slate-400 font-semibold">{mode === 'Cash' ? t.cash : mode === 'UPI' ? t.upi : mode === 'Card' ? t.card : t.credit}</span>
                     <span className="font-bold text-slate-200 font-mono">₹{(amt || 0).toLocaleString('en-IN')} ({percentage}%)</span>
                   </div>
                   {/* Progress bar */}
@@ -626,7 +626,8 @@ export default function Reports({ backendUrl, userToken, language }) {
                     <div 
                       className={`h-full rounded-full ${
                         mode === 'UPI' ? 'bg-emerald-500' :
-                        mode === 'Cash' ? 'bg-amber-500' : 'bg-blue-500'
+                        mode === 'Cash' ? 'bg-amber-500' :
+                        mode === 'Card' ? 'bg-teal-500' : 'bg-blue-500'
                       }`}
                       style={{ width: `${percentage}%` }}
                     />

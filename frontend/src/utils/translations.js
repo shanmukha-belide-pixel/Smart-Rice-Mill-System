@@ -47,6 +47,9 @@ export const translations = {
     cash: "నగదు",
     upi: "UPI",
     credit: "అప్పు (క్రెడిట్)",
+    card: "కార్డ్ (Card)",
+    cardDetails: "కార్డ్ సమాచారం (Card Details)",
+    cardTransactionId: "కార్డ్ లావాదేవీ ID",
     verifyPayment: "చెల్లింపు ధృవీకరించు",
     // QR Scanner
     scanPaymentProof: "కస్టమర్ పేమెంట్ QR స్కాన్ చేయి",
@@ -196,6 +199,9 @@ export const translations = {
     cash: "Cash",
     upi: "UPI",
     credit: "Credit",
+    card: "Card",
+    cardDetails: "Card Details",
+    cardTransactionId: "Card Transaction ID",
     verifyPayment: "Verify Payment",
     // QR Scanner
     scanPaymentProof: "Scan Customer Payment QR",

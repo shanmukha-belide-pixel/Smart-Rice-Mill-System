@@ -19,6 +19,10 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
   const [scanVerified, setScanVerified] = useState(false);
   const [verifiedTxId, setVerifiedTxId] = useState('');
 
+  // Card payment state
+  const [isCardVerified, setIsCardVerified] = useState(false);
+  const [cardTxId, setCardTxId] = useState('');
+
   // Receipt state
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
@@ -261,6 +265,8 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
     setErrorMsg('');
     setScanVerified(false);
     setVerifiedTxId('');
+    setIsCardVerified(false);
+    setCardTxId('');
     setSaleForm({
       variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : '',
       quantity_kg: '',
@@ -302,6 +308,12 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       return;
     }
 
+    // Require payment verification if Card selected
+    if (saleForm.payment_mode === 'Card' && !isCardVerified) {
+      setErrorMsg(language === 'te' ? 'దయచేసి సేవ పూర్తి చేసే ముందు కార్డ్ చెల్లింపును ధృవీకరించండి.' : 'Please verify the card payment before serving.');
+      return;
+    }
+
     try {
       const res = await fetch(`${backendUrl}/api/tokens/${servingToken.id}/serve`, {
         method: 'POST',
@@ -331,7 +343,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
           pricePerKg: itemPrice,
           totalAmount: currentTotal,
           paymentMode: saleForm.payment_mode,
-          txId: saleForm.payment_mode === 'UPI' ? verifiedTxId : null,
+          txId: saleForm.payment_mode === 'UPI' ? verifiedTxId : (saleForm.payment_mode === 'Card' ? cardTxId : null),
           dateTime: new Date().toLocaleString()
         });
 
@@ -339,6 +351,8 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
         setSaleForm(prev => ({ ...prev, quantity_kg: '', bags: '' }));
         setScanVerified(false);
         setVerifiedTxId('');
+        setIsCardVerified(false);
+        setCardTxId('');
         setShowReceiptModal(true);
         fetchData();
       } else {
@@ -954,10 +968,11 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
               {/* Payment Mode Selection */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-slate-400">{t.paymentMode}</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {[
                     { mode: 'Cash', label: t.cash },
                     { mode: 'UPI', label: t.upi },
+                    { mode: 'Card', label: t.card },
                     { mode: 'Credit', label: t.credit }
                   ].map(item => (
                     <button
@@ -970,8 +985,12 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                           setScanVerified(false);
                           setVerifiedTxId('');
                         }
+                        if (item.mode !== 'Card') {
+                          setIsCardVerified(false);
+                          setCardTxId('');
+                        }
                       }}
-                      className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                      className={`py-2.5 px-2 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
                         saleForm.payment_mode === item.mode
                           ? 'bg-emerald-600/10 border-emerald-500 text-emerald-450 shadow-inner'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -1002,19 +1021,50 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
 
                   {/* Scan Proof button / verified label */}
                   {!scanVerified ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowScanner(true);
-                        setErrorMsg('');
-                      }}
-                      className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs border border-emerald-900/20 hover:border-emerald-500/20 cursor-pointer shadow-md w-full justify-center"
-                    >
-                      <Scan className="w-4 h-4 animate-pulse" />
-                      {t.scanPaymentProof}
-                    </button>
+                    <div className="w-full space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowScanner(true);
+                          setErrorMsg('');
+                        }}
+                        className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs border border-emerald-900/20 hover:border-emerald-500/20 cursor-pointer shadow-md w-full justify-center"
+                      >
+                        <Scan className="w-4 h-4 animate-pulse" />
+                        {t.scanPaymentProof}
+                      </button>
+
+                      {/* Manual Input for UPI Transaction ID */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-semibold text-slate-400 text-left">
+                          {language === 'te' ? 'లేదా మాన్యువల్‌గా లావాదేవీ IDని నమోదు చేయండి' : 'Or Manually Enter Transaction ID'}
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder={language === 'te' ? 'లావాదేవీ IDని నమోదు చేయండి' : 'Enter Transaction ID'}
+                            value={verifiedTxId}
+                            onChange={(e) => setVerifiedTxId(e.target.value)}
+                            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (verifiedTxId.trim()) {
+                                setScanVerified(true);
+                              } else {
+                                setErrorMsg(language === 'te' ? 'దయచేసి లావాదేవీ IDని నమోదు చేయండి.' : 'Please enter a transaction ID.');
+                              }
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-550 text-white font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                          >
+                            {t.verifyPayment}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="w-full bg-emerald-955/20 border border-emerald-900/30 text-emerald-400 rounded-xl p-3 flex flex-col items-center text-xs animate-slide-in">
+                    <div className="w-full bg-emerald-955/20 border border-emerald-900/30 text-emerald-400 rounded-xl p-3 flex flex-col items-center text-xs animate-slide-in relative">
                       <span className="font-bold flex items-center gap-1.5 text-[11px] mb-1">
                         <CheckCircle className="w-4 h-4 text-emerald-500 fill-emerald-500/10" />
                         {t.paymentVerified}
@@ -1022,6 +1072,75 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                       <span className="text-[9px] text-slate-500 font-mono tracking-wider font-bold">
                         {t.transactionId}: {verifiedTxId}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScanVerified(false);
+                          setVerifiedTxId('');
+                        }}
+                        className="absolute right-2 top-2 text-slate-500 hover:text-slate-200 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Card Payment panel if Card payment selected */}
+              {saleForm.payment_mode === 'Card' && saleForm.quantity_kg > 0 && (
+                <div className="border border-slate-800 bg-slate-955 rounded-2xl p-4 flex flex-col space-y-4 animate-slide-in">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold text-center block">
+                    {t.cardDetails}
+                  </span>
+                  
+                  {!isCardVerified ? (
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-semibold text-slate-400">
+                        {t.cardTransactionId}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g. Card last 4 digits or Tx ID"
+                          value={cardTxId}
+                          onChange={(e) => setCardTxId(e.target.value)}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (cardTxId.trim()) {
+                              setIsCardVerified(true);
+                            } else {
+                              setErrorMsg(language === 'te' ? 'దయచేసి కార్డ్ లావాదేవీ సమాచారాన్ని నమోదు చేయండి.' : 'Please enter card transaction details.');
+                            }
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-550 text-white font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                        >
+                          {t.verifyPayment}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full bg-emerald-955/20 border border-emerald-900/30 text-emerald-450 rounded-xl p-3 flex flex-col items-center text-xs animate-slide-in relative">
+                      <span className="font-bold flex items-center gap-1.5 text-[11px] mb-1">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 fill-emerald-500/10" />
+                        {t.paymentVerified}
+                      </span>
+                      <span className="text-[9px] text-slate-550 font-mono tracking-wider font-bold">
+                        {t.cardTransactionId}: {cardTxId}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCardVerified(false);
+                          setCardTxId('');
+                        }}
+                        className="absolute right-2 top-2 text-slate-500 hover:text-slate-200 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1039,7 +1158,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                 </button>
                 <button
                   type="submit"
-                  disabled={(saleForm.payment_mode === 'UPI' && !scanVerified) || (selectedStockItem && selectedStockItem.quantity_kg <= 0)}
+                  disabled={(saleForm.payment_mode === 'UPI' && !scanVerified) || (saleForm.payment_mode === 'Card' && !isCardVerified) || (selectedStockItem && selectedStockItem.quantity_kg <= 0)}
                   className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 cursor-pointer"
                 >
                   {t.recordAndServe}
