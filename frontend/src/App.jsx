@@ -9,7 +9,9 @@ import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarCh
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
-const BACKEND_URL = 'http://127.0.0.1:8000';
+const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000'
+  : 'https://smart-rice-mill-backend.onrender.com';
 
 export default function App() {
   const [role, setRole] = useState(null); // 'owner', 'staff', 'accountant', 'public', 'customer'

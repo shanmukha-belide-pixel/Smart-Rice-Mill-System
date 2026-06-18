@@ -527,7 +527,7 @@ const setupMockApi = () => {
           stockConsumed[s.variety_name] = (stockConsumed[s.variety_name] || 0) + qty;
         });
 
-        const paymentBreakdown = { Cash: 0, UPI: 0, Credit: 0 };
+        const paymentBreakdown = { Cash: 0, UPI: 0, Card: 0, Credit: 0 };
         todaySales.forEach(s => {
           const mode = s.payment_mode || 'Cash';
           const amt = parseFloat(s.total_price) || 0;
