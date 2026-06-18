@@ -811,7 +811,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       {/* SERVE / CHECKOUT TRANSACTION MODAL */}
       {showServeModal && servingToken && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-slate-800/80 rounded-[2rem] max-w-md w-full overflow-hidden shadow-2xl animate-fade-in relative">
+          <div className="bg-slate-900 border border-slate-800/80 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl animate-fade-in relative flex flex-col">
             <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
             
             {/* Modal Header */}
