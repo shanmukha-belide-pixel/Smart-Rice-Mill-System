@@ -5,8 +5,9 @@ import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SmsSimulator from './components/SmsSimulator';
-import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3 } from 'lucide-react';
+import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { translations } from './utils/translations';
+import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
 
@@ -19,7 +20,15 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Set default language to 'te' (Telugu)
+  const [toasts, setToasts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [isConnected, setIsConnected] = useState(navigator.onLine);
+  const [lastSynced, setLastSynced] = useState(Date.now());
+  const [syncedText, setSyncedText] = useState('Just now');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem('language') || 'te';
   });
@@ -27,6 +36,119 @@ export default function App() {
   const sessionTimeoutRef = useRef(null);
 
   const t = translations[language];
+
+  // Toast Dispatcher
+  const showToast = (type, message) => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
+
+  // Add in-app Notification
+  const addNotification = (type, title, message) => {
+    const newNotif = {
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
+      type,
+      title,
+      message,
+      timestamp: new Date().toLocaleTimeString(),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+    showToast(type, `${title}: ${message}`);
+    
+    if (type === 'error' || type === 'warning') {
+      triggerPushNotification(title, message);
+    }
+  };
+
+  // Dual Tone Synthesized Chime using Web Audio API
+  const playSoftChime = () => {
+    if (!soundEnabled) return;
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+      gain1.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start();
+      osc1.stop(audioCtx.currentTime + 0.35);
+
+      setTimeout(() => {
+        if (audioCtx.state === 'closed') return;
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+        gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start();
+        osc2.stop(audioCtx.currentTime + 0.45);
+      }, 120);
+    } catch (e) {
+      console.warn("Chime Audio fail:", e);
+    }
+  };
+
+  // Push Notifications API
+  const requestPushPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        showToast('success', language === 'te' ? 'పుష్ నోటిఫికేషన్లు అనుమతించబడ్డాయి!' : 'Push Notifications enabled!');
+      }
+    }
+  };
+
+  const triggerPushNotification = (title, body) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, { body });
+      } catch (e) {
+        console.warn("Push failed:", e);
+      }
+    }
+  };
+
+  // WhatsApp Alert Manager Simulation when stock falls below threshold
+  const simulateManagerWhatsAppAlert = (varietyName, qty, threshold) => {
+    const msg = `📲 [WhatsApp Alert to Manager] Stock Alert: ${varietyName} has fallen below threshold to ${qty.toFixed(1)}kg (Threshold: ${threshold}kg).`;
+    const state = getDbState();
+    const smsInbox = [...(state.sms_inbox || [])];
+    
+    const tenSecsAgo = new Date(Date.now() - 10000).toLocaleTimeString();
+    const duplicate = smsInbox.some(s => s.message.includes(varietyName) && s.timestamp > tenSecsAgo);
+    if (duplicate) return;
+
+    smsInbox.unshift({
+      phone_number: '+919999999999',
+      message: msg,
+      timestamp: new Date().toLocaleTimeString(),
+      provider: 'WHATSAPP_MANAGER'
+    });
+    updateSmsInbox(smsInbox);
+  };
+
+  // Full Screen toggler
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(err => {
+        console.warn(`Fullscreen activation failed: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false));
+    }
+  };
+
+
 
   const toggleLanguage = () => {
     const nextLang = language === 'te' ? 'en' : 'te';
@@ -110,6 +232,111 @@ export default function App() {
     localStorage.removeItem('name');
     if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
   };
+
+  useEffect(() => {
+    window.showToast = showToast;
+    window.addNotification = addNotification;
+    
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }, [soundEnabled, language]);
+
+  // Subscribe to connection status
+  useEffect(() => {
+    const unsub = subscribeToConnection((status, syncTime) => {
+      setIsConnected(status);
+      setLastSynced(syncTime);
+    });
+    return unsub;
+  }, []);
+
+  // Last synced timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const seconds = Math.floor((Date.now() - lastSynced) / 1000);
+      if (seconds <= 2) {
+        setSyncedText(language === 'te' ? 'ఇప్పుడే' : 'Just now');
+      } else {
+        setSyncedText(language === 'te' ? `${seconds} సెకన్ల క్రితం` : `${seconds}s ago`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lastSynced, language]);
+
+  // Subscribe to database for real-time events
+  const lastStateRef = useRef({ stock: [], tokens: [] });
+  useEffect(() => {
+    if (!token) return;
+
+    const unsub = subscribeToDatabase((state) => {
+      if (!state) return;
+      const prev = lastStateRef.current;
+      
+      // 1. Detect new tokens (New Customer Joined Queue)
+      const prevTokens = prev.tokens || [];
+      const currentTokens = state.tokens || [];
+      const newTokens = currentTokens.filter(t => !prevTokens.some(pt => pt.id === t.id));
+      if (newTokens.length > 0) {
+        newTokens.forEach(t => {
+          if (t.status === 'waiting') {
+            addNotification(
+              'success',
+              language === 'te' ? 'కొత్త కస్టమర్' : 'New Customer Joined',
+              language === 'te' 
+                ? `టోకెన్ ${t.token_number} క్యూలో చేరారు.` 
+                : `Token ${t.token_number} joined the queue.`
+            );
+            playSoftChime();
+          }
+        });
+      }
+
+      // 2. Detect low stock alerts
+      const prevStock = prev.stock || [];
+      const currentStock = state.stock || [];
+      currentStock.forEach(item => {
+        const prevItem = prevStock.find(ps => ps.id === item.id);
+        const isLow = item.quantity_kg <= item.low_stock_threshold;
+        const wasLow = prevItem ? (prevItem.quantity_kg <= prevItem.low_stock_threshold) : false;
+        
+        if (isLow && (!wasLow || (prevItem && prevItem.quantity_kg !== item.quantity_kg))) {
+          addNotification(
+            'warning',
+            language === 'te' ? 'తక్కువ స్టాక్ హెచ్చరిక' : 'Low Stock Warning',
+            language === 'te'
+              ? `${item.variety_name} నిల్వ తక్కువగా ఉంది: ${item.quantity_kg.toFixed(1)} kg.`
+              : `${item.variety_name} is running low: ${item.quantity_kg.toFixed(1)} kg.`
+          );
+          simulateManagerWhatsAppAlert(item.variety_name, item.quantity_kg, item.low_stock_threshold);
+        }
+      });
+
+      // 3. Detect Full Queue
+      const waitingCount = currentTokens.filter(t => t.status === 'waiting').length;
+      const prevWaitingCount = prevTokens.filter(t => t.status === 'waiting').length;
+      if (waitingCount >= 10 && prevWaitingCount < 10) {
+        addNotification(
+          'error',
+          language === 'te' ? 'క్యూ నిండిపోయింది' : 'Queue Full',
+          language === 'te'
+            ? `క్యూలో 10+ మంది కస్టమర్లు వేచి ఉన్నారు.`
+            : `Over 10 customers are waiting in the queue.`
+        );
+      }
+
+      setLastSynced(Date.now());
+      lastStateRef.current = { stock: currentStock, tokens: currentTokens };
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [token, language, soundEnabled]);
 
   // Reset timeout on key activities
   const handleActivity = () => {
@@ -358,6 +585,14 @@ export default function App() {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
       
+      {/* Connectivity Banner */}
+      {!isConnected && (
+        <div className="bg-rose-950/90 text-rose-200 text-xs px-6 py-2.5 text-center font-bold border-b border-rose-900/30 flex items-center justify-center gap-2 z-50 relative">
+          <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_red] animate-pulse" />
+          <span>{language === 'te' ? '🔴 ఆఫ్‌లైన్ - ఇంటర్నెట్ కనెక్షన్ లేదు. డేటా లోకల్‌గా సేవ్ చేయబడుతోంది.' : '🔴 Offline - No internet connection. Data is saved locally.'}</span>
+        </div>
+      )}
+      
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
@@ -406,6 +641,104 @@ export default function App() {
 
         {/* User profile & logout */}
         <div className="flex items-center gap-4">
+          {/* Sound Toggle */}
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="p-2 bg-slate-950 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 border border-slate-900 transition-colors cursor-pointer"
+            title={soundEnabled ? "Mute chime" : "Unmute chime"}
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-500" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 bg-slate-950 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 border border-slate-900 transition-colors cursor-pointer"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Counter Mode"}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-emerald-500" /> : <Maximize2 className="w-3.5 h-3.5 text-slate-450" />}
+          </button>
+
+          {/* In-app Notification Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+              className="p-2 bg-slate-955 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 border border-slate-900 transition-colors cursor-pointer relative"
+              title="Notifications"
+            >
+              <Bell className="w-3.5 h-3.5 text-slate-350" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-slate-950">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Center Dropdown */}
+            {showNotificationsDropdown && (
+              <div className="absolute right-0 mt-2.5 w-72 bg-slate-900/95 backdrop-blur-lg border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-in">
+                <div className="bg-slate-950/80 px-4 py-3 border-b border-slate-850 flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-slate-35 tracking-wider">
+                    {language === 'te' ? 'నోటిఫికేషన్లు' : 'Notifications'}
+                  </span>
+                  <div className="flex gap-2 items-center">
+                    {('Notification' in window && Notification.permission !== 'granted') && (
+                      <button
+                        onClick={requestPushPermission}
+                        className="text-[8px] bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 text-slate-450 hover:text-slate-200 cursor-pointer"
+                      >
+                        Push
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 cursor-pointer"
+                      >
+                        {language === 'te' ? 'అన్నీ' : 'Mark read'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-850/65">
+                  {notifications.length > 0 ? (
+                    notifications.map(n => (
+                      <div
+                        key={n.id}
+                        onClick={() => setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item))}
+                        className={`p-3 text-[11px] transition-colors cursor-pointer ${n.read ? 'bg-transparent text-slate-500' : 'bg-slate-900/50 text-slate-200 font-medium'}`}
+                      >
+                        <div className="flex justify-between items-start gap-1.5">
+                          <span className={`font-bold ${n.type === 'success' ? 'text-emerald-450' : n.type === 'warning' ? 'text-amber-450' : n.type === 'error' ? 'text-rose-450' : 'text-blue-450'}`}>
+                            {n.title}
+                          </span>
+                          <span className="text-[9px] text-slate-500 shrink-0 font-mono">{n.timestamp}</span>
+                        </div>
+                        <p className="mt-1 text-slate-400 leading-normal">{n.message}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-xs text-slate-500">
+                      {language === 'te' ? 'నోటిఫికేషన్లు లేవు' : 'No notifications'}
+                    </div>
+                  )}
+                </div>
+
+                {notifications.length > 0 && (
+                  <div className="bg-slate-950/40 p-2 border-t border-slate-850 text-center">
+                    <button
+                      onClick={() => setNotifications([])}
+                      className="text-[9px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-wider cursor-pointer"
+                    >
+                      {language === 'te' ? 'అన్నీ క్లియర్ చేయి' : 'Clear all'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Language Selector */}
           <button
             onClick={toggleLanguage}
@@ -436,7 +769,7 @@ export default function App() {
         {/* Left Side: Active Route Panel */}
         <div className="flex-1 overflow-y-auto pr-1">
           {currentTab === 'dashboard' && canAccessTab('dashboard') && (
-            <TokenDashboard backendUrl={BACKEND_URL} userToken={token} role={role} language={language} />
+            <TokenDashboard backendUrl={BACKEND_URL} userToken={token} role={role} language={language} toggleFullscreen={toggleFullscreen} isFullscreen={isFullscreen} syncedText={syncedText} isConnected={isConnected} />
           )}
           {currentTab === 'stock' && canAccessTab('stock') && (
             <StockManagement backendUrl={BACKEND_URL} userToken={token} language={language} />
@@ -493,6 +826,37 @@ export default function App() {
           </button>
         )}
       </nav>
+
+      {/* Toast Notifications Container */}
+      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-[90%] pointer-events-none">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`p-4 rounded-2xl shadow-2xl border flex items-start gap-3 transform translate-x-0 transition-all duration-305 pointer-events-auto animate-slide-in ${
+              toast.type === 'success' ? 'bg-slate-900/95 border-emerald-500/30 text-emerald-350' :
+              toast.type === 'error' ? 'bg-slate-900/95 border-rose-500/30 text-rose-350' :
+              toast.type === 'warning' ? 'bg-slate-900/95 border-amber-500/30 text-amber-350' :
+              'bg-slate-900/95 border-blue-500/30 text-blue-350'
+            }`}
+          >
+            {toast.type === 'success' && <CheckCircle className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />}
+            {toast.type === 'error' && <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0 mt-0.5" />}
+            {toast.type === 'warning' && <AlertTriangle className="w-4.5 h-4.5 text-amber-400 shrink-0 mt-0.5" />}
+            {toast.type === 'info' && <Info className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />}
+            
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-slate-100">{toast.message}</p>
+            </div>
+            
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="text-slate-500 hover:text-slate-300 text-sm font-bold ml-1.5 shrink-0 cursor-pointer"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
 
     </div>
   );

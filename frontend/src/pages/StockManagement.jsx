@@ -189,7 +189,7 @@ export default function StockManagement({ backendUrl, userToken, language }) {
           {/* CSV Import */}
           <button
             onClick={handleBulkImport}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-850 text-slate-350 hover:text-slate-200 py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-850 text-slate-355 hover:text-slate-200 py-3 px-4 h-11 rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
           >
             <Upload className="w-4 h-4 text-emerald-400" />
             {importStatus === 'reading' ? (language === 'te' ? 'దిగుమతి అవుతోంది...' : 'Importing...') :
@@ -198,7 +198,7 @@ export default function StockManagement({ backendUrl, userToken, language }) {
           
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/20 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-3 px-4 h-11 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             {t.addVariety}
@@ -366,13 +366,13 @@ export default function StockManagement({ backendUrl, userToken, language }) {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 py-3 h-11 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-2.5 rounded-xl text-xs font-bold transition-colors shadow-lg shadow-emerald-950/30 cursor-pointer"
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-3 h-11 flex items-center justify-center rounded-xl text-xs font-bold transition-colors shadow-lg shadow-emerald-950/30 cursor-pointer"
                 >
                   {t.save}
                 </button>
@@ -449,13 +449,13 @@ export default function StockManagement({ backendUrl, userToken, language }) {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 py-3 h-11 flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 cursor-pointer"
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white py-3 h-11 flex items-center justify-center rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 cursor-pointer"
                 >
                   {t.save}
                 </button>

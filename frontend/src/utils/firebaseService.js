@@ -1,3 +1,7 @@
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, onSnapshot, setDoc, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+
 // Firebase Real-time Data Sync Service for Sri Trimula Rice Mill
 const MOCK_BIN_URL = 'https://extendsclass.com/api/json-storage/bin/ccfedec';
 
@@ -87,18 +91,16 @@ const getInitialState = () => ({
 
 // Setup Firebase Service
 const initializeFirebaseService = () => {
-  const sdk = window.FirebaseSDK;
-  
-  if (sdk && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
     try {
-      const app = sdk.initializeApp(firebaseConfig);
-      db = sdk.getFirestore(app);
-      auth = sdk.getAuth(app);
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
       isRealFirebase = true;
-      docRef = sdk.doc(db, "mill", "ccfedec");
+      docRef = doc(db, "mill", "ccfedec");
       
       // Try enabling offline persistence (IndexedDB managed by Firestore)
-      sdk.enableIndexedDbPersistence(db).catch((err) => {
+      enableIndexedDbPersistence(db).catch((err) => {
         console.warn("[Firebase Service] Offline persistence failed to enable:", err.code);
       });
       
@@ -211,17 +213,16 @@ export const subscribeToDatabase = (callback) => {
   listeners.add(callback);
   
   if (isRealFirebase && docRef) {
-    const sdk = window.FirebaseSDK;
-    const unsub = sdk.onSnapshot(docRef, (docSnap) => {
+    const unsub = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        localState = docSnap.snap ? docSnap.data() : docSnap.data();
+        localState = docSnap.data();
         lastSyncedTime = Date.now();
         updateConnectionState(true);
         callback(localState);
         triggerWebsocketRefresh();
       } else {
         // Seed default document in Firestore if not exists
-        sdk.setDoc(docRef, getInitialState());
+        setDoc(docRef, getInitialState());
       }
     }, (err) => {
       console.error("[Firebase Service] onSnapshot error:", err);
@@ -251,9 +252,8 @@ const updateDatabase = async (updater) => {
   triggerWebsocketRefresh();
   
   if (isRealFirebase && docRef) {
-    const sdk = window.FirebaseSDK;
     try {
-      await sdk.setDoc(docRef, localState);
+      await setDoc(docRef, localState);
       lastSyncedTime = Date.now();
       updateConnectionState(true);
     } catch (e) {
@@ -346,15 +346,14 @@ export const loginUser = async (username, password) => {
   const cleanPass = password.trim();
 
   if (isRealFirebase) {
-    const sdk = window.FirebaseSDK;
     const email = username.includes('@') ? username : `${cleanUser}@mill.com`;
     try {
-      const userCred = await sdk.signInWithEmailAndPassword(auth, email, password);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
       
       // Permit only owner, shanmukha, staff, accountant
       if (cleanUser !== 'owner' && cleanUser !== 'shanmukha' && cleanUser !== 'staff' && cleanUser !== 'accountant') {
-        await sdk.signOut(auth);
+        await signOut(auth);
         throw new Error("Access denied: Invalid account console");
       }
       
@@ -395,15 +394,13 @@ export const loginUser = async (username, password) => {
 
 export const logoutUser = async () => {
   if (isRealFirebase) {
-    const sdk = window.FirebaseSDK;
-    await sdk.signOut(auth);
+    await signOut(auth);
   }
 };
 
 export const monitorAuthState = (callback) => {
   if (isRealFirebase) {
-    const sdk = window.FirebaseSDK;
-    return sdk.onAuthStateChanged(auth, (user) => {
+    return onAuthStateChanged(auth, (user) => {
       if (user) {
         const email = user.email || '';
         let username = email.split('@')[0] || 'viewer';
@@ -424,7 +421,7 @@ export const monitorAuthState = (callback) => {
             full_name: fullName
           });
         } else {
-          sdk.signOut(auth);
+          signOut(auth);
           callback(null);
         }
       } else {

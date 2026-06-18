@@ -3,7 +3,7 @@ import { Play, UserCheck, UserX, UserMinus, ShieldAlert, Award, Clock, Users, Ch
 import { translations } from '../utils/translations';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-export default function TokenDashboard({ backendUrl, userToken, role, language }) {
+export default function TokenDashboard({ backendUrl, userToken, role, language, toggleFullscreen, isFullscreen, syncedText, isConnected }) {
   const [tokens, setTokens] = useState([]);
   const [stockVarieties, setStockVarieties] = useState([]);
   const [selectedCounter, setSelectedCounter] = useState('Counter 1');
@@ -24,6 +24,79 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
   const [receiptData, setReceiptData] = useState(null);
 
   const t = translations[language || 'te'];
+
+  // Swipe gesture states
+  const [swipeTokenId, setSwipeTokenId] = useState(null);
+  const [swipeStartX, setSwipeStartX] = useState(0);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+
+  // Pull to refresh gesture states
+  const [touchStart, setTouchStart] = useState(null);
+  const [pulling, setPulling] = useState(false);
+
+  const handleTouchStartGlobal = (e) => {
+    if (window.scrollY === 0) {
+      setTouchStart(e.targetTouches[0].clientY);
+    }
+  };
+
+  const handleTouchMoveGlobal = (e) => {
+    if (touchStart === null) return;
+    const currentTouch = e.targetTouches[0].clientY;
+    const diff = currentTouch - touchStart;
+    if (diff > 85 && !pulling) {
+      setPulling(true);
+    }
+  };
+
+  const handleTouchEndGlobal = () => {
+    if (pulling) {
+      fetchData();
+      if (window.showToast) {
+        window.showToast('success', language === 'te' ? 'డేటా సమకాలీకరించబడింది ✓' : 'Queue data synchronized ✓');
+      }
+      setPulling(false);
+    }
+    setTouchStart(null);
+  };
+
+  const handleCardTouchStart = (e, tokenId) => {
+    setSwipeTokenId(tokenId);
+    setSwipeStartX(e.targetTouches[0].clientX);
+    setSwipeOffsetX(0);
+  };
+
+  const handleCardTouchMove = (e, tokenId) => {
+    if (swipeTokenId !== tokenId) return;
+    const diff = e.targetTouches[0].clientX - swipeStartX;
+    // Bound swipe offset to prevent overflow
+    if (Math.abs(diff) < 130) {
+      setSwipeOffsetX(diff);
+    }
+  };
+
+  const handleCardTouchEnd = (token) => {
+    if (swipeTokenId !== token.id) return;
+    
+    if (swipeOffsetX < -75) {
+      // Swipe left: mark no-show
+      handleNoShow(token.id);
+      if (window.showToast) {
+        window.showToast('warning', language === 'te' ? `టోకెన్ ${token.token_number} నో-షోగా మార్చబడింది.` : `Token ${token.token_number} marked as no-show.`);
+      }
+    } else if (swipeOffsetX > 75) {
+      // Swipe right: open serve checkout modal
+      setServingToken(token);
+      setSaleForm(prev => ({
+        ...prev,
+        variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : ''
+      }));
+      setShowServeModal(true);
+    }
+    
+    setSwipeTokenId(null);
+    setSwipeOffsetX(0);
+  };
 
   // Audio/voice setup
   useEffect(() => {
@@ -358,7 +431,19 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
   };
 
   return (
-    <div className="space-y-6">
+    <div 
+      onTouchStart={handleTouchStartGlobal}
+      onTouchMove={handleTouchMoveGlobal}
+      onTouchEnd={handleTouchEndGlobal}
+      className="space-y-6 relative"
+    >
+      {/* Pull down refresh visual spinner */}
+      {pulling && (
+        <div className="flex justify-center items-center py-3 bg-slate-900 border border-emerald-500/25 rounded-2xl animate-pulse text-xs text-emerald-400 gap-2 shadow-lg z-50">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          <span>{language === 'te' ? 'తాజా డేటా సమకాలీకరిస్తోంది...' : 'Syncing live queue data...'}</span>
+        </div>
+      )}
       
       {/* Styles for dynamic laser scan and styling html5-qrcode controls */}
       <style dangerouslySetInnerHTML={{__html: `
@@ -421,15 +506,22 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
         <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent" />
         <div>
           <h2 className="text-xl font-bold text-slate-100">{t.queueOperations}</h2>
-          <p className="text-xs text-slate-400">{t.queueOperationsDesc}</p>
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+            <span>{t.queueOperationsDesc}</span>
+            <span className="text-slate-700">•</span>
+            <span className="font-mono text-[10px] text-slate-500 flex items-center gap-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-550' : 'bg-rose-550'}`} />
+              {isConnected ? `Synced ${syncedText}` : 'Offline'}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex flex-col">
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{t.activeCounter}</span>
             <select
               value={selectedCounter}
               onChange={(e) => setSelectedCounter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-200 mt-1"
+              className="bg-slate-950 border border-slate-800 text-xs rounded-xl px-3.5 py-3 h-11 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-200 mt-1"
             >
               <option>Counter 1</option>
               <option>Counter 2</option>
@@ -439,7 +531,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
           
           <button
             onClick={() => setIsHold(!isHold)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-wider mt-4 ${
+            className={`px-4 py-3 h-11 rounded-xl text-xs font-bold transition-all uppercase tracking-wider mt-4 cursor-pointer flex items-center justify-center ${
               isHold 
                 ? 'bg-rose-950/40 text-rose-400 border border-rose-800/40' 
                 : 'bg-slate-900 text-slate-350 hover:bg-slate-850 border border-slate-855 hover:text-slate-200'
@@ -447,6 +539,15 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
           >
             {isHold ? t.holdQueueActive : t.holdQueue}
           </button>
+
+          {toggleFullscreen && (
+            <button
+              onClick={toggleFullscreen}
+              className="px-4 py-3 h-11 rounded-xl text-xs font-bold transition-all uppercase tracking-wider bg-slate-900 text-slate-350 hover:bg-slate-850 border border-slate-855 hover:text-slate-200 mt-4 cursor-pointer flex items-center justify-center"
+            >
+              {isFullscreen ? (language === 'te' ? 'పూర్తి స్క్రీన్ వద్దు' : 'Exit Full') : (language === 'te' ? 'పూర్తి స్క్రీన్' : 'Fullscreen')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -545,43 +646,69 @@ export default function TokenDashboard({ backendUrl, userToken, role, language }
               <span className="text-[10px] text-slate-500 uppercase font-bold font-mono tracking-wider">{t.fifoOrder}</span>
             </div>
             
-            <div className="p-4 divide-y divide-slate-900/80 max-h-[350px] overflow-y-auto">
+            <div className="p-4 divide-y divide-slate-900/80 max-h-[350px] overflow-y-auto space-y-2">
               {waitingTokens.length > 0 ? (
                 waitingTokens.map((token, index) => (
-                  <div key={token.id} className="flex justify-between items-center py-3.5 px-2.5 hover:bg-slate-900/20 rounded-xl transition-all">
-                    <div className="flex items-center gap-4">
-                      <span className="text-[11px] font-mono text-slate-600 w-5">#{index + 1}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-amber-500 font-bold text-xs bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/10">
-                          {token.token_number}
-                        </span>
-                        {token.priority && (
-                          <span className="text-[8px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold uppercase tracking-wider" title={token.priority_reason}>
-                            Priority
-                          </span>
-                        )}
+                  <div key={token.id} className="relative overflow-hidden rounded-xl bg-slate-900/10 border border-slate-900/30">
+                    {/* Swipe revealed backgrounds */}
+                    <div className="absolute inset-0 flex justify-between items-center px-4 pointer-events-none select-none">
+                      <div className="bg-emerald-600/30 text-emerald-400 text-[9px] font-bold py-1 px-2.5 rounded-lg flex items-center gap-1 shadow-inner">
+                        Serve →
                       </div>
-                      <div className="hidden sm:block">
-                        <span className="text-[11px] text-slate-505 font-mono">{token.phone_number}</span>
+                      <div className="bg-rose-600/30 text-rose-400 text-[9px] font-bold py-1 px-2.5 rounded-lg flex items-center gap-1 shadow-inner">
+                        ← No-Show
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <span className="text-[11px] text-slate-400 font-semibold font-mono">~{token.wait_time_minutes} {t.mins}</span>
-                      {index === 0 && (
-                        <button
-                          onClick={handleCallNext}
-                          disabled={isHold}
-                          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-1.5 px-3.5 rounded-lg text-[9px] uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          {t.call}
-                        </button>
-                      )}
+
+                    {/* Foreground card content */}
+                    <div
+                      onTouchStart={(e) => handleCardTouchStart(e, token.id)}
+                      onTouchMove={(e) => handleCardTouchMove(e, token.id)}
+                      onTouchEnd={() => handleCardTouchEnd(token)}
+                      style={swipeTokenId === token.id ? { transform: `translateX(${swipeOffsetX}px)`, transition: 'none' } : { transform: 'translateX(0)', transition: 'transform 0.25s ease-out' }}
+                      className="flex justify-between items-center py-3.5 px-2.5 bg-slate-900/90 hover:bg-slate-900/20 rounded-xl transition-all relative z-10"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-[11px] font-mono text-slate-600 w-5">#{index + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-amber-500 font-bold text-xs bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/10">
+                            {token.token_number}
+                          </span>
+                          {token.priority && (
+                            <span className="text-[8px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold uppercase tracking-wider" title={token.priority_reason}>
+                              Priority
+                            </span>
+                          )}
+                        </div>
+                        <div className="hidden sm:block">
+                          <span className="text-[11px] text-slate-505 font-mono">{token.phone_number}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <span className="text-[11px] text-slate-400 font-semibold font-mono">~{token.wait_time_minutes} {t.mins}</span>
+                        {index === 0 && (
+                          <button
+                            onClick={() => {
+                              setServingToken(token);
+                              setSaleForm(prev => ({
+                                ...prev,
+                                variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : ''
+                              }));
+                              setShowServeModal(true);
+                            }}
+                            disabled={isHold}
+                            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 px-4 h-11 min-w-[55px] flex items-center justify-center rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                          >
+                            {t.call}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-slate-505 text-xs">{t.noWaitingCustomers}</div>
+                <div className="py-8 text-center text-slate-550 text-xs">{t.noWaitingCustomers}</div>
               )}
             </div>
           </div>

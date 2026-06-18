@@ -213,3 +213,31 @@ async def handle_incoming_sms(
         reply = f"Invalid command. Supported: 'TOKEN' (register), 'PRICE' (rates), 'STATUS' (position), 'STOP' (cancel). - {mill_name}"
         await SMSService.send_sms(phone, reply)
         return Response(content="Help sent", media_type="text/plain")
+
+
+@router.post("/payment")
+async def handle_payment(
+    phone_number: str = Form(...),
+    amount: float = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Webhook for payment confirmation from Google Pay/Phone Pay.
+    Receives phone_number and amount, triggers bill SMS via Zapier.
+    """
+    # Your payment storage logic here (optional)
+    # Zapier will handle the rest
+    return Response(content="Payment received", media_type="text/plain")
+
+
+@router.post("/send-sms")
+async def send_sms_webhook(
+    phone_number: str = Form(...),
+    message: str = Form(...),
+):
+    """
+    Webhook for Zapier to send arbitrary SMS.
+    Receives phone_number and message, sends via SMSService.
+    """
+    await SMSService.send_sms(phone_number, message)
+    return Response(content="SMS sent", media_type="text/plain")

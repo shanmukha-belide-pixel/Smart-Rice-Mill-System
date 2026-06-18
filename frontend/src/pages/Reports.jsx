@@ -73,15 +73,15 @@ export default function Reports({ backendUrl, userToken, language }) {
     };
   }, [backendUrl]);
 
+  const totalInventoryValue = (stock || []).reduce((sum, item) => {
+    const qty = parseFloat(item.quantity_kg) || 0;
+    const price = parseFloat(item.price_per_kg) || 0;
+    return sum + (qty * price);
+  }, 0);
+
   // Real client-side exports
   const triggerExport = (type) => {
     setExporting(type);
-    
-    const totalInventoryValue = (stock || []).reduce((sum, item) => {
-      const qty = parseFloat(item.quantity_kg) || 0;
-      const price = parseFloat(item.price_per_kg) || 0;
-      return sum + (qty * price);
-    }, 0);
     
     if (type === 'excel') {
       try {
@@ -392,7 +392,7 @@ export default function Reports({ backendUrl, userToken, language }) {
           <button
             onClick={() => triggerExport('excel')}
             disabled={exporting !== null}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-slate-350 hover:text-slate-200 py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-slate-355 hover:text-slate-200 py-3 px-4 h-11 rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
           >
             <Download className="w-4 h-4 text-emerald-400" />
             {exporting === 'excel' ? (language === 'te' ? 'ఎగుమతి అవుతోంది...' : 'Exporting...') : (language === 'te' ? 'Excel ఎగుమతి' : 'Export Excel')}
@@ -400,7 +400,7 @@ export default function Reports({ backendUrl, userToken, language }) {
           <button
             onClick={() => triggerExport('pdf')}
             disabled={exporting !== null}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-50 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/20 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-50 text-white py-3 px-4 h-11 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/20 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             {exporting === 'pdf' ? (language === 'te' ? 'PDF సృష్టిస్తోంది...' : 'Generating PDF...') : t.exportPdf}
@@ -494,32 +494,34 @@ export default function Reports({ backendUrl, userToken, language }) {
             <p className="text-[10px] text-slate-500 font-mono">{language === 'te' ? 'గత 7 పని దినాలలో మిల్ అమ్మకాల సారాంశం' : 'Overview of mill checkouts over the last 7 active days'}</p>
           </div>
           
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trends.weekly_revenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRevBar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.95}/>
-                    <stop offset="100%" stopColor="#047857" stopOpacity={0.25}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                <XAxis dataKey="day" stroke="#475569" fontSize={10} tickLine={false} />
-                <YAxis stroke="#475569" fontSize={10} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
-                  labelStyle={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}
-                  itemStyle={{ color: '#10b981', fontSize: '11px' }}
-                  cursor={{ fill: 'rgba(16, 185, 129, 0.05)', radius: 6 }}
-                />
-                <Bar 
-                  dataKey="revenue" 
-                  name={language === 'te' ? 'రాబడి (₹)' : 'Revenue (₹)'} 
-                  fill="url(#colorRevBar)" 
-                  radius={[6, 6, 0, 0]} 
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="overflow-x-auto w-full">
+            <div className="h-64 min-w-[600px] md:min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trends.weekly_revenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevBar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.95}/>
+                      <stop offset="100%" stopColor="#047857" stopOpacity={0.25}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
+                  <XAxis dataKey="day" stroke="#475569" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#475569" fontSize={10} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
+                    labelStyle={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}
+                    itemStyle={{ color: '#10b981', fontSize: '11px' }}
+                    cursor={{ fill: 'rgba(16, 185, 129, 0.05)', radius: 6 }}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    name={language === 'te' ? 'రాబడి (₹)' : 'Revenue (₹)'} 
+                    fill="url(#colorRevBar)" 
+                    radius={[6, 6, 0, 0]} 
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -583,19 +585,21 @@ export default function Reports({ backendUrl, userToken, language }) {
             <p className="text-[10px] text-slate-500 font-mono">{language === 'te' ? 'సిబ్బంది డ్యూటీని సరిచేయడానికి మిల్లు బిజీగా ఉండే సమయాల విశ్లేషణ' : 'Analyzes busiest times of the day to optimize staff allocation'}</p>
           </div>
           
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trends.peak_hours} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                <XAxis dataKey="hour" stroke="#475569" fontSize={9} tickLine={false} />
-                <YAxis stroke="#475569" fontSize={9} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
-                  itemStyle={{ color: '#f59e0b', fontSize: '11px' }}
-                />
-                <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} name={language === 'te' ? 'లావాదేవీలు' : 'Checkouts'} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="overflow-x-auto w-full">
+            <div className="h-56 min-w-[600px] md:min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trends.peak_hours} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
+                  <XAxis dataKey="hour" stroke="#475569" fontSize={9} tickLine={false} />
+                  <YAxis stroke="#475569" fontSize={9} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
+                    itemStyle={{ color: '#f59e0b', fontSize: '11px' }}
+                  />
+                  <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} name={language === 'te' ? 'లావాదేవీలు' : 'Checkouts'} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -645,7 +649,8 @@ export default function Reports({ backendUrl, userToken, language }) {
             {language === 'te' ? 'మిగిలిన నిల్వ పరిమాణము, ధరలు మరియు ఆస్తి విలువ నివేదిక' : 'Live remaining quantities, prices, and asset valuations in real time'}
           </p>
         </div>
-        <div className="overflow-x-auto pt-2">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto pt-2">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-850 text-[10px] uppercase font-bold text-slate-500">
@@ -667,7 +672,7 @@ export default function Reports({ backendUrl, userToken, language }) {
                     <td className="py-3 px-3 font-semibold text-slate-200">{item.variety_name}</td>
                     <td className="py-3 px-3 text-slate-500 text-[10px] uppercase">{item.category ? item.category.replace('_', ' ') : 'Milled Rice'}</td>
                     <td className="py-3 px-3 text-right font-mono font-bold">{qty.toFixed(1)} kg</td>
-                    <td className="py-3 px-3 text-right font-mono text-slate-500">{(qty / 10).toFixed(1)}</td>
+                    <td className="py-3 px-3 text-right font-mono text-slate-505">{(qty / 10).toFixed(1)}</td>
                     <td className="py-3 px-3 text-right font-mono">₹{price.toFixed(2)}</td>
                     <td className="py-3 px-3 text-right font-mono font-bold text-emerald-450">₹{val.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
                   </tr>
@@ -675,11 +680,53 @@ export default function Reports({ backendUrl, userToken, language }) {
               })}
               {(!stock || stock.length === 0) && (
                 <tr>
-                  <td colSpan="6" className="py-6 text-center text-slate-500">No stock inventory data available</td>
+                  <td colSpan="6" className="py-6 text-center text-slate-505">No stock inventory data available</td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="grid grid-cols-1 gap-4 md:hidden pt-2">
+          {(stock || []).map((item) => {
+            const qty = parseFloat(item.quantity_kg) || 0;
+            const price = parseFloat(item.price_per_kg) || 0;
+            const val = qty * price;
+            return (
+              <div key={item.id} className="bg-slate-950/60 p-4 rounded-2xl border border-slate-900 space-y-3 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-emerald-500/20" />
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-sm text-slate-205">{item.variety_name}</h4>
+                    <span className="text-[9px] text-slate-500 uppercase">{item.category ? item.category.replace('_', ' ') : 'Milled Rice'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[8px] text-slate-505 block uppercase tracking-wider font-bold">Asset Value</span>
+                    <span className="font-mono font-bold text-emerald-450 text-xs">₹{val.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-slate-900/60">
+                  <div>
+                    <span className="text-slate-505 block font-bold uppercase tracking-wider text-[8px]">Stock</span>
+                    <span className="font-mono font-bold text-slate-300">{qty.toFixed(1)} kg</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-505 block font-bold uppercase tracking-wider text-[8px]">Bags (10kg)</span>
+                    <span className="font-mono text-slate-450">{(qty / 10).toFixed(1)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-505 block font-bold uppercase tracking-wider text-[8px]">Price/kg</span>
+                    <span className="font-mono text-slate-350">₹{price.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {(!stock || stock.length === 0) && (
+            <div className="py-6 text-center text-slate-550 text-xs">No stock inventory data available</div>
+          )}
         </div>
       </div>
     </div>
