@@ -7,6 +7,7 @@ import io
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Dict, Set
