@@ -53,6 +53,7 @@ class StockResponse(StockBase):
 class TokenBase(BaseModel):
     token_number: str
     phone_number: str
+    customer_name: Optional[str] = None
     status: str
     priority: bool
     priority_reason: Optional[str] = None
@@ -82,6 +83,7 @@ class SaleCreate(BaseModel):
     variety_name: str
     quantity_kg: float
     payment_mode: str # 'Cash', 'UPI', 'Credit'
+    customer_name: Optional[str] = None # Name entered by staff when serving
 
 class SaleResponse(BaseModel):
     id: int
@@ -112,6 +114,17 @@ class DailyReportResponse(BaseModel):
     total_revenue: float
     payment_breakdown: dict # e.g. {"Cash": 100, "UPI": 200, "Credit": 50}
     stock_consumed: dict # e.g. {"Basmati": 50, "Sona Masuri": 100}
+
+class CustomerSaleRecord(BaseModel):
+    sno: int
+    token_number: str
+    customer_name: str
+    phone_number: str
+    rice_variety: str
+    quantity_kg: float
+    total_amount: float
+    payment_mode: str
+    time: str
 
 # System Setting schemas
 class SystemSettingBase(BaseModel):

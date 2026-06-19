@@ -534,9 +534,11 @@ async def serve_token(token_id: int, sale_input: SaleCreate, db: Session = Depen
     )
     db.add(new_sale)
     
-    # Complete token
+    # Complete token — also save customer name if provided
     token.status = "served"
     token.served_at = datetime.datetime.utcnow()
+    if sale_input.customer_name:
+        token.customer_name = sale_input.customer_name
     db.commit()
     db.refresh(token)
     
@@ -712,6 +714,54 @@ def get_daily_report(db: Session = Depends(get_db), current_user: User = Depends
         "payment_breakdown": payment_split,
         "stock_consumed": stock_split
     }
+
+@app.get("/api/reports/customer-sales")
+def get_customer_sales(date: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Returns all customer sale records for a given date (default: today).
+    Each record contains: token number, customer name, phone number,
+    rice variety, quantity kg, total amount, payment mode, time.
+    Used for Excel export.
+    """
+    check_role(current_user, ["owner", "accountant"])
+    
+    if date:
+        try:
+            target_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            target_date = datetime.date.today()
+    else:
+        target_date = datetime.date.today()
+    
+    start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
+    end_of_day = datetime.datetime.combine(target_date, datetime.time.max)
+    
+    # Join sales with tokens to get phone number and customer name
+    sales = db.query(Sale).filter(
+        Sale.created_at >= start_of_day,
+        Sale.created_at <= end_of_day
+    ).order_by(Sale.created_at).all()
+    
+    records = []
+    for idx, sale in enumerate(sales, start=1):
+        token = db.query(Token).filter(Token.id == sale.token_id).first() if sale.token_id else None
+        
+        # IST = UTC + 5:30
+        ist_time = sale.created_at + datetime.timedelta(hours=5, minutes=30)
+        
+        records.append({
+            "sno": idx,
+            "token_number": token.token_number if token else "-",
+            "customer_name": (token.customer_name or "-") if token else "-",
+            "phone_number": (token.phone_number or "-") if token else "-",
+            "rice_variety": sale.variety_name,
+            "quantity_kg": round(sale.quantity_kg, 2),
+            "total_amount": round(sale.total_price, 2),
+            "payment_mode": sale.payment_mode,
+            "time": ist_time.strftime("%I:%M %p")
+        })
+    
+    return {"date": target_date.strftime("%d-%b-%Y"), "records": records}
 
 @app.get("/api/reports/trends")
 def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

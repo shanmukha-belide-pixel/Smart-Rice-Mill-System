@@ -40,6 +40,7 @@ class Token(Base):
     id = Column(Integer, primary_key=True, index=True)
     token_number = Column(String, index=True, nullable=False) # e.g. T-001
     phone_number = Column(String, nullable=False)
+    customer_name = Column(String, nullable=True) # Optional: recorded by staff when serving
     status = Column(String, index=True, default="waiting") # 'waiting', 'active', 'served', 'no_show', 'expired'
     priority = Column(Boolean, default=False)
     priority_reason = Column(String, nullable=True)

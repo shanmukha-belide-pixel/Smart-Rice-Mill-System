@@ -7,6 +7,7 @@ export default function Reports({ backendUrl, userToken, language }) {
   const [dailyData, setDailyData] = useState(null);
   const [trends, setTrends] = useState(null);
   const [stock, setStock] = useState([]);
+  const [customerSales, setCustomerSales] = useState([]);
   const [exporting, setExporting] = useState(null); // 'pdf' or 'excel'
 
   const t = translations[language || 'te'];
@@ -35,6 +36,15 @@ export default function Reports({ backendUrl, userToken, language }) {
       if (stockRes.ok) {
         const sData = await stockRes.json();
         setStock(sData);
+      }
+
+      // Fetch customer sales for Excel export
+      const custRes = await fetch(`${backendUrl}/api/reports/customer-sales`, {
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      });
+      if (custRes.ok) {
+        const cData = await custRes.json();
+        setCustomerSales(cData.records || []);
       }
     } catch (err) {
       console.error(err);
@@ -120,6 +130,22 @@ export default function Reports({ backendUrl, userToken, language }) {
           const qtyVal = qty || 0;
           csvContent += `${variety},${qtyVal.toFixed(1)},${(qtyVal / 10).toFixed(1)}\n`;
         });
+        csvContent += "\n";
+
+        // --- Customer Sales Table ---
+        csvContent += "--- Customer Sales Register ---\n";
+        csvContent += "S.No,Token No,Customer Name,Phone Number,Rice Variety,Quantity (kg),Amount (₹),Payment Mode,Time\n";
+        if (customerSales.length === 0) {
+          csvContent += "No sales recorded today\n";
+        } else {
+          customerSales.forEach(row => {
+            csvContent += `${row.sno},${row.token_number},"${row.customer_name}",${row.phone_number},${row.rice_variety},${row.quantity_kg},${row.total_amount},${row.payment_mode},${row.time}\n`;
+          });
+          // Totals row
+          const totalQty = customerSales.reduce((sum, r) => sum + r.quantity_kg, 0);
+          const totalAmt = customerSales.reduce((sum, r) => sum + r.total_amount, 0);
+          csvContent += `,,,,Total,${totalQty.toFixed(2)},${totalAmt.toFixed(2)},,\n`;
+        }
         
         // Download logic
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

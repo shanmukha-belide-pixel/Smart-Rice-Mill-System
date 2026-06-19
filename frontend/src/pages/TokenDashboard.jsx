@@ -10,7 +10,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
   const [isHold, setIsHold] = useState(false);
   const [showServeModal, setShowServeModal] = useState(false);
   const [servingToken, setServingToken] = useState(null);
-  const [saleForm, setSaleForm] = useState({ variety_name: '', quantity_kg: '', bags: '', payment_mode: 'Cash' });
+  const [saleForm, setSaleForm] = useState({ variety_name: '', quantity_kg: '', bags: '', payment_mode: 'Cash', customer_name: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
@@ -271,7 +271,8 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : '',
       quantity_kg: '',
       bags: '',
-      payment_mode: 'Cash'
+      payment_mode: 'Cash',
+      customer_name: ''
     });
     setShowServeModal(true);
   };
@@ -324,7 +325,8 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
         body: JSON.stringify({
           variety_name: saleForm.variety_name,
           quantity_kg: parseFloat(saleForm.quantity_kg),
-          payment_mode: saleForm.payment_mode
+          payment_mode: saleForm.payment_mode,
+          customer_name: saleForm.customer_name || null
         })
       });
 
@@ -905,6 +907,21 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                   <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">{t.contactNumber}</span>
                   <div className="font-mono text-slate-300 mt-1">{servingToken.phone_number}</div>
                 </div>
+              </div>
+
+              {/* Customer Name input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-400">
+                  {language === 'te' ? 'కస్టమర్ పేరు (ఐచ్ఛికం)' : 'Customer Name (Optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={saleForm.customer_name}
+                  onChange={(e) => setSaleForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                  placeholder={language === 'te' ? 'ఉదా. రాము గారు' : 'e.g. Ramu'}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100"
+                />
+                <p className="text-[10px] text-slate-500">{language === 'te' ? 'ఇది Excel రిపోర్ట్‌లో కనిపిస్తుంది' : 'This will appear in the Excel sales report'}</p>
               </div>
 
               {/* Rice variety selection */}
