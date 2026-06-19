@@ -13,6 +13,18 @@
   --color-accent-rose: hsl(346, 84%, 61%);
   --color-accent-slate: hsl(215, 25%, 27%);
 
+  --color-slate-805: #1e293b;
+  --color-slate-850: #0f172a;
+  --color-slate-855: #0b0f19;
+  --color-slate-650: #475569;
+  --color-slate-655: #334155;
+  --color-slate-550: #64748b;
+  --color-slate-505: #94a3b8;
+  --color-emerald-405: #34d399;
+  --color-emerald-450: #10b981;
+  --color-emerald-455: #059669;
+  --color-rose-455: #ef4444;
+
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-fade-in: fadeIn 0.3s ease-out forwards;
   --animate-slide-in: slideIn 0.3s ease-out forwards;

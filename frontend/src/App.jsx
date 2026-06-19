@@ -5,7 +5,8 @@ import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SmsSimulator from './components/SmsSimulator';
-import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2 } from 'lucide-react';
+import SettingsPage from './pages/Settings';
+import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings } from 'lucide-react';
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
@@ -675,7 +676,11 @@ export default function App() {
 
   // Role permissions checking
   const canAccessTab = (tab) => {
-    if (role === 'owner' || role === 'staff' || role === 'accountant') return true;
+    if (role === 'owner') return true;
+    if (tab === 'settings') {
+      return role === 'staff';
+    }
+    if (role === 'staff' || role === 'accountant') return true;
     return false;
   };
 
@@ -688,9 +693,6 @@ export default function App() {
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-emerald-500/10 p-2 rounded-2xl border border-emerald-500/20">
-            <Flame className="w-6 h-6 text-emerald-400 fill-emerald-500/10 animate-pulse-slow" />
-          </div>
           <div>
             <h1 className="font-black text-sm md:text-base text-slate-100 uppercase tracking-wider">{t.appName}</h1>
             <span className="text-[9px] text-slate-500 font-mono uppercase tracking-widest font-bold">{t.workspaceConsole}</span>
@@ -702,31 +704,45 @@ export default function App() {
           {canAccessTab('dashboard') && (
             <button
               onClick={() => setCurrentTab('dashboard')}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer flex items-center gap-2 ${
                 currentTab === 'dashboard' ? 'bg-slate-900 text-emerald-400 shadow-md border border-slate-800' : 'text-slate-500 hover:text-slate-350'
               }`}
             >
+              <Ticket className="w-3.5 h-3.5" />
               {t.tokenBoard}
             </button>
           )}
           {canAccessTab('stock') && (
             <button
               onClick={() => setCurrentTab('stock')}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer flex items-center gap-2 ${
                 currentTab === 'stock' ? 'bg-slate-900 text-emerald-400 shadow-md border border-slate-800' : 'text-slate-500 hover:text-slate-350'
               }`}
             >
+              <Package className="w-3.5 h-3.5" />
               {t.inventory}
             </button>
           )}
           {canAccessTab('reports') && (
             <button
               onClick={() => setCurrentTab('reports')}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer flex items-center gap-2 ${
                 currentTab === 'reports' ? 'bg-slate-900 text-emerald-400 shadow-md border border-slate-800' : 'text-slate-500 hover:text-slate-350'
               }`}
             >
+              <BarChart3 className="w-3.5 h-3.5" />
               {t.financials}
+            </button>
+          )}
+          {canAccessTab('settings') && (
+            <button
+              onClick={() => setCurrentTab('settings')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider cursor-pointer flex items-center gap-2 ${
+                currentTab === 'settings' ? 'bg-slate-900 text-emerald-400 shadow-md border border-slate-800' : 'text-slate-500 hover:text-slate-350'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              {t.settings || (language === 'te' ? 'సెట్టింగులు' : 'Settings')}
             </button>
           )}
         </nav>
@@ -869,6 +885,9 @@ export default function App() {
           {currentTab === 'reports' && canAccessTab('reports') && (
             <Reports backendUrl={BACKEND_URL} userToken={token} language={language} />
           )}
+          {currentTab === 'settings' && canAccessTab('settings') && (
+            <SettingsPage backendUrl={BACKEND_URL} userToken={token} language={language} />
+          )}
         </div>
 
         {/* Right Side: Interactive SMS/Call Simulator (Docked) */}
@@ -915,6 +934,15 @@ export default function App() {
           >
             <BarChart3 className={`w-5 h-5 ${currentTab === 'reports' ? 'text-emerald-400' : ''}`} />
             <span className={`text-[9px] uppercase tracking-wider font-semibold ${currentTab === 'reports' ? 'text-emerald-450 font-bold' : ''}`}>{t.financials}</span>
+          </button>
+        )}
+        {canAccessTab('settings') && (
+          <button
+            onClick={() => setCurrentTab('settings')}
+            className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 cursor-pointer"
+          >
+            <Settings className={`w-5 h-5 ${currentTab === 'settings' ? 'text-emerald-400' : ''}`} />
+            <span className={`text-[9px] uppercase tracking-wider font-semibold ${currentTab === 'settings' ? 'text-emerald-450 font-bold' : ''}`}>{t.settings || (language === 'te' ? 'సెట్టింగులు' : 'Settings')}</span>
           </button>
         )}
       </nav>
