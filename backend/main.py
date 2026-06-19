@@ -21,7 +21,7 @@ from backend.routes.webhooks import router as webhook_router, calculate_estimate
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Sri Trimula Rice Mill API", version="1.0.0")
+app = FastAPI(title="Sri Trimula Rice Mill API", version="1.1.0")  # v1.1.0: Added OTP auth endpoints
 
 # CORS middleware config
 app.add_middleware(
