@@ -104,7 +104,7 @@ export const translations = {
     activeWaitStatus: "📍 యాక్టివ్! దయచేసి వెంటనే కౌంటర్ కి వెళ్ళండి.",
     noShowStatus: "⚠️ హాజరు కాలేదు. దయచేసి హెల్ప్‌డెస్క్‌ని సంప్రదించండి.",
     waitingWaitStatus: "దయచేసి వేచి ఉండండి. మీ టోకెన్ వంతు రాగానే SMS పంపబడుతుంది.",
-    noInternetTip: "ఇంటర్నెట్ లేదా? +91-XXX-XXX-XXXX కి మిస్డ్ కాల్ ఇవ్వండి. ఉచిత SMS అందుకోండి.",
+    noInternetTip: "ఇంటర్నెట్ లేదా? +91-7075295440 కి మిస్డ్ కాల్ ఇవ్వండి. ఉచిత SMS అందుకోండి.",
     logoutPhone: "ఫోన్ లాగ్ అవుట్",
     // Simulator
     simulatorTitle: "SMS & కాల్ సిమ్యులేటర్",
@@ -256,7 +256,7 @@ export const translations = {
     activeWaitStatus: "📍 NOW ACTIVE! Please proceed to counter immediately.",
     noShowStatus: "⚠️ No-show recorded. Please visit the helpdesk.",
     waitingWaitStatus: "Please wait. We will send you an SMS when your ticket is called.",
-    noInternetTip: "No internet? Give a missed call to +91-XXX-XXX-XXXX.",
+    noInternetTip: "No internet? Give a missed call to +91-7075295440.",
     logoutPhone: "Logout Phone",
     // Simulator
     simulatorTitle: "SMS & Call Simulator",

@@ -387,9 +387,9 @@ export default function CustomerPortal({ backendUrl, language }) {
       {/* Footer warning */}
       <div className="border-t border-slate-850/60 pt-4 text-[9px] text-slate-500 text-center font-mono leading-normal">
         {language === 'te' ? (
-          <span>ఇంటర్నెట్ లేదా? మా నంబర్ <span className="text-slate-400 font-bold">+91-XXX-XXX-XXXX</span> కు మిస్డ్ కాల్ ఇవ్వండి. వెంటనే ఉచిత ఎస్ఎమ్ఎస్ ద్వారా మీ టోకెన్ వివరాలను పొందండి.</span>
+          <span>ఇంటర్నెట్ లేదా? మా నంబర్ <span className="text-slate-400 font-bold">+91-7075295440</span> కు మిస్డ్ కాల్ ఇవ్వండి. వెంటనే ఉచిత ఎస్ఎమ్ఎస్ ద్వారా మీ టోకెన్ వివరాలను పొందండి.</span>
         ) : (
-          <span>No internet? Give a missed call to <span className="text-slate-400 font-bold">+91-XXX-XXX-XXXX</span>. We will reply instantly with your token details via free SMS.</span>
+          <span>No internet? Give a missed call to <span className="text-slate-400 font-bold">+91-7075295440</span>. We will reply instantly with your token details via free SMS.</span>
         )}
       </div>
     </div>
