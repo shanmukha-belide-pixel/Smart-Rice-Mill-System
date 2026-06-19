@@ -841,31 +841,11 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
             "varieties_split": varieties_split
         }
         
-    # Fallback to default demo template if database is clean
+    # Return empty real data if database has no sales yet
     return {
-        "weekly_revenue": [
-            {"day": "Mon", "revenue": 12400, "tokens": 98},
-            {"day": "Tue", "revenue": 14500, "tokens": 112},
-            {"day": "Wed", "revenue": 11200, "tokens": 85},
-            {"day": "Thu", "revenue": 16800, "tokens": 130},
-            {"day": "Fri", "revenue": 18450, "tokens": 142},
-            {"day": "Sat", "revenue": 19200, "tokens": 150},
-            {"day": "Sun", "revenue": 0, "tokens": 0}
-        ],
-        "peak_hours": [
-            {"hour": "06-08 AM", "count": 15},
-            {"hour": "08-10 AM", "count": 45},
-            {"hour": "10-12 PM", "count": 68},
-            {"hour": "12-02 PM", "count": 28},
-            {"hour": "02-04 PM", "count": 12},
-            {"hour": "04-06 PM", "count": 35},
-            {"hour": "06-08 PM", "count": 52}
-        ],
-        "varieties_split": [
-            {"name": "Basmati", "value": 150},
-            {"name": "Sona Masuri", "value": 200},
-            {"name": "Sharbati", "value": 35}
-        ]
+        "weekly_revenue": [],
+        "peak_hours": [],
+        "varieties_split": []
     }
 
 # --- Settings API ---
