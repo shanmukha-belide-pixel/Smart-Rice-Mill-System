@@ -146,15 +146,16 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
   // Fetch tokens and stock
   const fetchData = async () => {
     try {
+      const timestamp = Date.now();
       // Get tokens
-      const tokenRes = await fetch(`${backendUrl}/api/tokens`);
+      const tokenRes = await fetch(`${backendUrl}/api/tokens?_t=${timestamp}`);
       if (tokenRes.ok) {
         const tokenData = await tokenRes.json();
         setTokens(tokenData);
       }
       
       // Get stock for dropdown
-      const stockRes = await fetch(`${backendUrl}/api/stock`);
+      const stockRes = await fetch(`${backendUrl}/api/stock?_t=${timestamp}`);
       if (stockRes.ok) {
         const stockData = await stockRes.json();
         setStockVarieties(stockData);
@@ -183,19 +184,32 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
     const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
 
     let socket;
+    let pingInterval;
     function connect() {
       socket = new WebSocket(wsUrl);
+      socket.onopen = () => {
+        // Ping every 30 seconds to keep connection alive on Render
+        pingInterval = setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send("PING");
+          }
+        }, 30000);
+      };
       socket.onmessage = (e) => {
         if (e.data === 'REFRESH_QUEUE') {
           fetchData();
         }
       };
-      socket.onclose = () => setTimeout(connect, 3000);
+      socket.onclose = () => {
+        if (pingInterval) clearInterval(pingInterval);
+        setTimeout(connect, 3000);
+      };
     }
     
     connect();
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      if (pingInterval) clearInterval(pingInterval);
       if (socket) socket.close();
     };
   }, [backendUrl]);
