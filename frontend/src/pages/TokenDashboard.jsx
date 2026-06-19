@@ -352,7 +352,8 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
 
         setReceiptData({
           tokenNumber: servingToken.token_number,
-          phoneNumber: servingToken.phone_number,
+          customerName: servingToken.customer_name || '-',
+          phoneNumber: servingToken.phone_number || '-',
           varietyName: saleForm.variety_name,
           quantityKg: parseFloat(saleForm.quantity_kg),
           bags: parseFloat(saleForm.bags) || (parseFloat(saleForm.quantity_kg) / 10),
@@ -1235,8 +1236,12 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                 {/* Receipt Details */}
                 <div className="py-3 space-y-1.5 border-b border-dashed border-slate-300">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{t.receiptToken}:</span>
-                    <span className="font-bold text-slate-950">{receiptData.tokenNumber}</span>
+                    <span className="text-slate-500 text-xs">{t.receiptToken}:</span>
+                    <span className="font-bold text-slate-950 text-sm">{receiptData.tokenNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Name:</span>
+                    <span className="font-bold text-slate-950">{receiptData.customerName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">{t.receiptPhone}:</span>
@@ -1302,8 +1307,61 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                   {t.close}
                 </button>
                 <button
-                  onClick={() => window.print()}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/20 cursor-pointer text-center flex items-center justify-center gap-1.5"
+                  onClick={() => {
+                    const printContent = document.getElementById('printable-receipt').innerHTML;
+                    const printWindow = window.open('', '_blank', 'width=400,height=600');
+                    printWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>Print Receipt</title>
+                          <style>
+                            @page { margin: 0; size: 80mm auto; }
+                            body { font-family: monospace; margin: 0; padding: 15px; width: 75mm; color: black; background: white; font-size: 12px; }
+                            .flex { display: flex; }
+                            .flex-col { display: flex; flex-direction: column; }
+                            .justify-between { justify-content: space-between; }
+                            .text-center { text-align: center; }
+                            .text-right { text-align: right; }
+                            .font-bold { font-weight: bold; }
+                            .text-sm { font-size: 14px; }
+                            .text-xs { font-size: 12px; }
+                            .text-\\[10px\\] { font-size: 10px; }
+                            .text-\\[9px\\] { font-size: 9px; }
+                            .text-\\[13px\\] { font-size: 13px; }
+                            .text-\\[8px\\] { font-size: 8px; }
+                            .border-b { border-bottom: 1px dashed #666; }
+                            .border-t { border-top: 1px dashed #666; }
+                            .border-dashed { border-style: dashed; }
+                            .py-3 { padding-top: 12px; padding-bottom: 12px; }
+                            .pb-4 { padding-bottom: 16px; }
+                            .pt-4 { padding-top: 16px; }
+                            .pt-3 { padding-top: 12px; }
+                            .mt-4 { margin-top: 16px; }
+                            .mt-1 { margin-top: 4px; }
+                            .mt-0\\.5 { margin-top: 2px; }
+                            .mb-1 { margin-bottom: 4px; }
+                            .space-y-1\\.5 > * + * { margin-top: 6px; }
+                            .tracking-wide { letter-spacing: 0.5px; }
+                            .uppercase { text-transform: uppercase; }
+                            .font-mono { font-family: monospace; }
+                            .font-sans { font-family: sans-serif; }
+                            .text-slate-900, .text-slate-950, .text-slate-800, .text-slate-700, .text-slate-500, .text-slate-400, .text-slate-600 { color: black; }
+                          </style>
+                        </head>
+                        <body>
+                          ${printContent}
+                          <script>
+                            setTimeout(() => {
+                              window.print();
+                              window.close();
+                            }, 250);
+                          </script>
+                        </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                  }}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-amber-950/20 cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
                   {t.printReceipt}
                 </button>
