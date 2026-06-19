@@ -3,26 +3,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: hsl(142, 70%, 97%);
-  --color-brand-100: hsl(142, 70%, 93%);
-  --color-brand-500: hsl(142, 72%, 29%); /* Emerald Green */
-  --color-brand-600: hsl(142, 76%, 22%);
-  --color-brand-700: hsl(142, 72%, 16%);
+  --color-brand-50: hsl(43, 74%, 97%);
+  --color-brand-100: hsl(43, 74%, 90%);
+  --color-brand-500: hsl(43, 74%, 49%); /* Gold/Amber */
+  --color-brand-600: hsl(43, 74%, 39%);
+  --color-brand-700: hsl(43, 74%, 29%);
   
   --color-accent-amber: hsl(38, 92%, 50%);
   --color-accent-rose: hsl(346, 84%, 61%);
   --color-accent-slate: hsl(215, 25%, 27%);
 
-  --color-slate-805: #1e293b;
-  --color-slate-850: #0f172a;
-  --color-slate-855: #0b0f19;
-  --color-slate-650: #475569;
-  --color-slate-655: #334155;
-  --color-slate-550: #64748b;
-  --color-slate-505: #94a3b8;
-  --color-emerald-405: #34d399;
-  --color-emerald-450: #10b981;
-  --color-emerald-455: #059669;
+  --color-slate-805: #1a1a1a;
+  --color-slate-850: #111111;
+  --color-slate-855: #080808;
+  --color-slate-650: #333333;
+  --color-slate-655: #2a2a2a;
+  --color-slate-550: #555555;
+  --color-slate-505: #777777;
+  
+  --color-emerald-50: #fffbeb;
+  --color-emerald-100: #fef3c7;
+  --color-emerald-200: #fde68a;
+  --color-emerald-300: #fcd34d;
+  --color-emerald-400: #fbbf24;
+  --color-emerald-500: #f59e0b;
+  --color-emerald-600: #d97706;
+  --color-emerald-700: #b45309;
+  --color-emerald-800: #92400e;
+  --color-emerald-900: #78350f;
+  --color-emerald-950: #451a03;
+  
+  --color-teal-500: #f59e0b;
+  --color-teal-550: #d97706;
+  --color-teal-650: #b45309;
+  
+  --color-emerald-405: #fcd34d; 
+  --color-emerald-450: #fbbf24; 
+  --color-emerald-455: #f59e0b; 
   --color-rose-455: #ef4444;
 
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -44,40 +61,41 @@ body {
   @apply bg-slate-950 text-slate-100 antialiased;
 }
 
-/* Glassmorphism Styles */
+/* Glassmorphism Styles - Luxury Thin Borders */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(17, 17, 17, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(251, 191, 36, 0.15); /* Subtle gold border */
   box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 4px 20px rgba(0, 0, 0, 0.8),
     inset 0 1px 1px rgba(255, 255, 255, 0.02);
 }
 
 .glass-panel-glow {
-  background: rgba(15, 23, 42, 0.98);
+  background: rgba(8, 8, 8, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(71, 85, 105, 0.8);
+  border: 1px solid rgba(251, 191, 36, 0.4); /* Stronger gold border */
   box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 10px 30px rgba(0, 0, 0, 0.9),
+    0 0 15px rgba(251, 191, 36, 0.05),
     inset 0 1px 1px rgba(255, 255, 255, 0.04);
 }
 
 .glass-input {
-  background: rgba(8, 12, 21, 0.7);
+  background: rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.07);
   color: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-input:focus {
-  border-color: rgba(16, 185, 129, 0.5);
+  border-color: rgba(251, 191, 36, 0.5); /* Gold focus */
   box-shadow: 
-    0 0 0 3px rgba(16, 185, 129, 0.15),
+    0 0 0 3px rgba(251, 191, 36, 0.15),
     inset 0 1px 2px rgba(0, 0, 0, 0.8);
-  background: rgba(8, 12, 21, 0.85);
+  background: rgba(0, 0, 0, 0.85);
 }
 
 /* Animations and Hover Micro-effects */
@@ -94,10 +112,10 @@ body {
 }
 
 .hover-glow-emerald:hover {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(251, 191, 36, 0.3);
   box-shadow: 
-    0 0 20px -3px rgba(16, 185, 129, 0.15),
-    0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    0 0 20px -3px rgba(251, 191, 36, 0.15),
+    0 20px 25px -5px rgba(0, 0, 0, 0.8);
 }
 
 /* Background floating blur animation */
@@ -126,7 +144,7 @@ body {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  background-image: linear-gradient(135deg, #fcd34d 0%, #d97706 100%);
 }
 
 /* Custom scrollbar for queue list */
