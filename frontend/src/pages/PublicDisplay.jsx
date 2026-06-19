@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, TrendingUp, Users, Clock, Flame } from 'lucide-react';
+import { Play, TrendingUp, Users, Clock } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function PublicDisplay({ backendUrl, language }) {
@@ -85,9 +85,6 @@ export default function PublicDisplay({ backendUrl, language }) {
       {/* Top Header */}
       <div className="flex justify-between items-center border-b border-slate-900 pb-6 z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-emerald-500/10 p-2.5 rounded-2xl border border-emerald-500/20">
-            <Flame className="w-8 h-8 text-emerald-400 fill-emerald-500/20" />
-          </div>
           <div>
             <h1 className="text-3xl font-extrabold uppercase tracking-wide bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent">
               {t.appName}

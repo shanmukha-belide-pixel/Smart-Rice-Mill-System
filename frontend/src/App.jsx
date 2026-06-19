@@ -6,7 +6,7 @@ import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SmsSimulator from './components/SmsSimulator';
 import SettingsPage from './pages/Settings';
-import { LogOut, Flame, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings } from 'lucide-react';
+import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings } from 'lucide-react';
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
@@ -413,6 +413,38 @@ export default function App() {
     return detail;
   };
 
+  const renderToasts = () => (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-[90%] pointer-events-none">
+      {toasts.map(toast => (
+        <div
+          key={toast.id}
+          className={`p-4 rounded-2xl shadow-2xl border flex items-start gap-3 transform translate-x-0 transition-all duration-305 pointer-events-auto animate-slide-in ${
+            toast.type === 'success' ? 'bg-slate-900/95 border-emerald-500/30 text-emerald-350' :
+            toast.type === 'error' ? 'bg-slate-900/95 border-rose-500/30 text-rose-350' :
+            toast.type === 'warning' ? 'bg-slate-900/95 border-amber-500/30 text-amber-350' :
+            'bg-slate-900/95 border-blue-500/30 text-blue-350'
+          }`}
+        >
+          {toast.type === 'success' && <CheckCircle className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />}
+          {toast.type === 'error' && <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0 mt-0.5" />}
+          {toast.type === 'warning' && <AlertTriangle className="w-4.5 h-4.5 text-amber-400 shrink-0 mt-0.5" />}
+          {toast.type === 'info' && <Info className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />}
+          
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-slate-100">{toast.message}</p>
+          </div>
+          
+          <button
+            onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+            className="text-slate-500 hover:text-slate-300 text-sm font-bold ml-1.5 shrink-0 cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   // If role is direct Public Display (unauthenticated)
   if (role === 'public') {
     return (
@@ -434,6 +466,7 @@ export default function App() {
           </button>
         </div>
         <PublicDisplay backendUrl={BACKEND_URL} language={language} />
+        {renderToasts()}
       </div>
     );
   }
@@ -463,6 +496,7 @@ export default function App() {
         <div className="w-full max-w-md z-10">
           <CustomerPortal backendUrl={BACKEND_URL} language={language} />
         </div>
+        {renderToasts()}
       </div>
     );
   }
@@ -667,6 +701,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        {renderToasts()}
       </div>
     );
   }
@@ -944,36 +979,7 @@ export default function App() {
         )}
       </nav>
 
-      {/* Toast Notifications Container */}
-      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-[90%] pointer-events-none">
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-            className={`p-4 rounded-2xl shadow-2xl border flex items-start gap-3 transform translate-x-0 transition-all duration-305 pointer-events-auto animate-slide-in ${
-              toast.type === 'success' ? 'bg-slate-900/95 border-emerald-500/30 text-emerald-350' :
-              toast.type === 'error' ? 'bg-slate-900/95 border-rose-500/30 text-rose-350' :
-              toast.type === 'warning' ? 'bg-slate-900/95 border-amber-500/30 text-amber-350' :
-              'bg-slate-900/95 border-blue-500/30 text-blue-350'
-            }`}
-          >
-            {toast.type === 'success' && <CheckCircle className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />}
-            {toast.type === 'error' && <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0 mt-0.5" />}
-            {toast.type === 'warning' && <AlertTriangle className="w-4.5 h-4.5 text-amber-400 shrink-0 mt-0.5" />}
-            {toast.type === 'info' && <Info className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />}
-            
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-slate-100">{toast.message}</p>
-            </div>
-            
-            <button
-              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="text-slate-500 hover:text-slate-300 text-sm font-bold ml-1.5 shrink-0 cursor-pointer"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+      {renderToasts()}
 
     </div>
   );

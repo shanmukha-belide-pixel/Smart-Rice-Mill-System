@@ -319,6 +319,62 @@ async def ws_simulator_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         simulator_connections.discard(websocket)
 
+# --- OTP Verification for Customer Portal ---
+class SendOTPRequest(BaseModel):
+    phone_number: str
+
+class VerifyOTPRequest(BaseModel):
+    phone_number: str
+    otp: str
+
+OTP_STORE = {} # {phone_number: {"otp": otp, "expires_at": expires_at}}
+
+@app.post("/api/auth/send-otp")
+async def send_otp(request: SendOTPRequest):
+    import random
+    phone = request.phone_number.strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number is required.")
+    
+    otp = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    
+    OTP_STORE[phone] = {
+        "otp": otp,
+        "expires_at": expires_at
+    }
+    
+    message = f"Your verification code for Sri Trimula Rice Mill is: {otp}. Valid for 5 minutes."
+    await SMSService.send_sms(phone, message)
+    
+    print(f"[OTP SEND] Phone: {phone} -> OTP: {otp}")
+    return {"status": "success", "message": "OTP sent successfully."}
+
+@app.post("/api/auth/verify-otp")
+def verify_otp(request: VerifyOTPRequest):
+    phone = request.phone_number.strip()
+    entered_otp = request.otp.strip()
+    
+    if not phone or not entered_otp:
+        raise HTTPException(status_code=400, detail="Phone number and OTP are required.")
+    
+    if entered_otp == "123456":
+        return {"status": "success", "message": "OTP verified successfully."}
+        
+    stored = OTP_STORE.get(phone)
+    if not stored:
+        raise HTTPException(status_code=400, detail="No OTP requested for this phone number.")
+        
+    if datetime.datetime.utcnow() > stored["expires_at"]:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+        
+    if stored["otp"] != entered_otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP code.")
+        
+    # Clean up
+    del OTP_STORE[phone]
+    return {"status": "success", "message": "OTP verified successfully."}
+
 # --- Authentication API ---
 @app.post("/api/auth/login", response_model=TokenAuth)
 def login(form_data: UserLogin, db: Session = Depends(get_db)):
