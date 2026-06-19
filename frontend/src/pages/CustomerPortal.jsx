@@ -99,9 +99,6 @@ export default function CustomerPortal({ backendUrl, language }) {
       
       {/* Header */}
       <div className="flex items-center gap-2.5 border-b border-slate-850 pb-4 mb-4">
-        <div className="bg-emerald-500/10 p-1.5 rounded-xl border border-emerald-500/20">
-          <Flame className="w-5 h-5 text-emerald-400 fill-emerald-500/10" />
-        </div>
         <div>
           <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">{t.appName}</h2>
           <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase font-bold">{t.customerPortal}</span>

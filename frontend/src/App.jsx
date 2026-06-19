@@ -491,9 +491,6 @@ export default function App() {
           <div className="w-full max-w-md space-y-8 animate-fade-in">
             {/* Logo Title */}
             <div className="text-center lg:text-left space-y-3">
-              <div className="bg-gradient-to-tr from-emerald-500/20 to-teal-500/5 p-4 rounded-[2rem] border border-emerald-500/25 w-20 h-20 flex items-center justify-center mx-auto lg:mx-0 shadow-lg shadow-emerald-950/20">
-                <Flame className="w-12 h-12 text-emerald-400 fill-emerald-500/10" />
-              </div>
               <div className="space-y-1">
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400 uppercase select-none">
                   {t.appName}
