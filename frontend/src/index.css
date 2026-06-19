@@ -34,24 +34,23 @@ body {
 
 /* Glassmorphism Styles */
 .glass-panel {
-  background: rgba(10, 15, 26, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
   box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.03);
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.02);
 }
 
 .glass-panel-glow {
-  background: rgba(10, 15, 26, 0.55);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(71, 85, 105, 0.8);
   box-shadow: 
-    0 10px 40px -10px rgba(0, 0, 0, 0.5),
-    0 0 15px -3px rgba(16, 185, 129, 0.05),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.04);
 }
 
 .glass-input {

@@ -469,9 +469,9 @@ export default function App() {
   // Unauthenticated Login Screen
   if (!token) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
-        {/* Animated glowing backdrop circles */}
-        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
+      <div className="min-h-screen bg-slate-950 flex flex-col lg:flex-row relative overflow-hidden font-sans">
+        {/* Animated subtle backdrop circles */}
+        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
         <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
 
         {/* Global language switcher top right */}
@@ -485,138 +485,189 @@ export default function App() {
           </button>
         </div>
 
-        <div className="w-full max-w-md space-y-6 z-10 animate-fade-in">
-          {/* Logo Title */}
-          <div className="text-center space-y-3">
-            <div className="bg-gradient-to-tr from-emerald-500/20 to-teal-500/5 p-4 rounded-[2rem] border border-emerald-500/25 w-20 h-20 flex items-center justify-center mx-auto shadow-lg shadow-emerald-950/20">
-              <Flame className="w-12 h-12 text-emerald-400 fill-emerald-500/10" />
+        {/* LEFT COLUMN: Clean Sign-In Form */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 bg-slate-950/65 backdrop-blur-lg">
+          <div className="w-full max-w-md space-y-8 animate-fade-in">
+            {/* Logo Title */}
+            <div className="text-center lg:text-left space-y-3">
+              <div className="bg-gradient-to-tr from-emerald-500/20 to-teal-500/5 p-4 rounded-[2rem] border border-emerald-500/25 w-20 h-20 flex items-center justify-center mx-auto lg:mx-0 shadow-lg shadow-emerald-950/20">
+                <Flame className="w-12 h-12 text-emerald-400 fill-emerald-500/10" />
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400 uppercase select-none">
+                  {t.appName}
+                </h1>
+                <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase select-none">
+                  {language === 'te' ? 'క్యూ & ఇన్వెంటరీ మేనేజ్‌మెంట్ యాప్' : 'Queue & Inventory Management App'}
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400 uppercase select-none">
-                {t.appName}
-              </h1>
-              <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase select-none">
-                {language === 'te' ? 'క్యూ & ఇన్వెంటరీ మేనేజ్‌మెంట్ యాప్' : 'Queue & Inventory Management App'}
+
+            {/* Form Box */}
+            <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-emerald-500/20 transition-colors duration-500">
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+              
+              {/* Language Tabs inside form for prominent switching */}
+              <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLanguage('te');
+                    localStorage.setItem('language', 'te');
+                  }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    language === 'te'
+                      ? 'bg-slate-900 text-emerald-400 border border-slate-800 shadow-md'
+                      : 'text-slate-500 hover:text-slate-400'
+                  }`}
+                >
+                  తెలుగు (Telugu)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLanguage('en');
+                    localStorage.setItem('language', 'en');
+                  }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    language === 'en'
+                      ? 'bg-slate-900 text-emerald-400 border border-slate-800 shadow-md'
+                      : 'text-slate-500 hover:text-slate-400'
+                  }`}
+                >
+                  English
+                </button>
+              </div>
+
+              <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
+              </h2>
+              
+              {loginError && (
+                <div className="bg-rose-950/40 border border-rose-900/30 text-rose-455 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                  <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0" />
+                  <span>{translateError(loginError)}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-400">
+                    {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'te' ? 'ఉదా: owner / staff' : 'owner / staff / accountant'}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-medium"
+                    value={loginForm.username}
+                    onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-400">
+                    {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-mono"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-emerald-950/30 mt-3 cursor-pointer"
+                >
+                  {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
+                </button>
+              </form>
+
+              {/* Quick Auto Login */}
+              <div className="pt-4 border-t border-slate-900/60 mt-4">
+                <button
+                  type="button"
+                  onClick={() => performAutoLogin('Shanmukha', 'Shanmukha29*')}
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold rounded-xl text-xs border border-emerald-900/25 hover:border-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                >
+                  ⚡ {language === 'te' ? 'యజమానిగా ఆటో లాగిన్ (Auto Login)' : 'Auto Login as Owner'}
+                </button>
+              </div>
+
+            </div>
+
+            {/* Quick Access to client portals */}
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-xs font-semibold pt-2">
+              <button
+                onClick={() => setRole('public')}
+                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                📺 {language === 'te' ? 'పబ్లిక్ డిస్‌ప్లే టీవీ' : 'Open Public Display TV'}
+              </button>
+              <span className="text-slate-800 hidden sm:inline">|</span>
+              <button
+                onClick={() => setRole('customer')}
+                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                📱 {language === 'te' ? 'కస్టమర్ మొబైల్ పోర్టల్' : 'Open Customer App'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Visual Panel with Clean Illustration */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900/40 border-l border-slate-900 items-center justify-center p-12 overflow-hidden">
+          {/* Grid pattern background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35" />
+          
+          <div className="relative z-10 w-full max-w-lg text-center space-y-8 animate-fade-in">
+            {/* The Custom Minimalist Illustration */}
+            <div className="relative mx-auto w-full max-w-md aspect-square bg-slate-950/20 rounded-[2.5rem] border border-slate-800/60 p-6 shadow-2xl flex items-center justify-center overflow-hidden">
+              <img 
+                src={`${import.meta.env.BASE_URL}login_illustration.png`} 
+                alt="Smart Rice Mill Dashboard Illustration" 
+                className="w-full h-full object-contain rounded-2xl select-none"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600"; // fallback if missing
+                }}
+              />
+            </div>
+
+            {/* Feature Text */}
+            <div className="space-y-4 px-6">
+              <h3 className="text-xl font-bold text-slate-100">
+                {language === 'te' 
+                  ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్ కన్సోల్' 
+                  : 'Modern Rice Mill Automation Console'}
+              </h3>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
+                {language === 'te'
+                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, చెల్లింపులు మరియు ఆటోమేటెడ్ నోటిఫికేషన్‌లను ఒకే చోట నిర్వహించండి.'
+                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and automated customer communication seamlessly.'}
               </p>
+              
+              {/* Feature Tags */}
+              <div className="flex flex-wrap justify-center gap-2 pt-2">
+                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
+                  ⚡ {language === 'te' ? 'ఆటోమేటిక్ SMS' : 'Automated SMS'}
+                </span>
+                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
+                  📞 {language === 'te' ? 'మిస్డ్ కాల్ టోకెన్' : 'Missed Call Tokens'}
+                </span>
+                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
+                  📊 {language === 'te' ? 'రియల్ టైమ్ డాష్‌బోర్డ్' : 'Real-time Analytics'}
+                </span>
+              </div>
             </div>
           </div>
-
-          {/* Form Box */}
-          <div className="glass-panel p-8 rounded-[2rem] border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-emerald-500/20 transition-colors duration-500">
-            <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
-            
-            {/* Language Tabs inside form for prominent switching */}
-            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
-              <button
-                type="button"
-                onClick={() => {
-                  setLanguage('te');
-                  localStorage.setItem('language', 'te');
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  language === 'te'
-                    ? 'bg-slate-900 text-emerald-450 border border-slate-800/80 shadow-md'
-                    : 'text-slate-500 hover:text-slate-400'
-                }`}
-              >
-                తెలుగు (Telugu)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLanguage('en');
-                  localStorage.setItem('language', 'en');
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  language === 'en'
-                    ? 'bg-slate-900 text-emerald-450 border border-slate-800/80 shadow-md'
-                    : 'text-slate-500 hover:text-slate-400'
-                }`}
-              >
-                English
-              </button>
-            </div>
-
-            <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
-            </h2>
-            
-            {loginError && (
-              <div className="bg-rose-950/40 border border-rose-900/30 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
-                <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0" />
-                <span>{translateError(loginError)}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-400">
-                  {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'te' ? 'ఉదా: owner / staff' : 'owner / staff / accountant'}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-medium"
-                  value={loginForm.username}
-                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-400">
-                  {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-mono"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-emerald-950/30 mt-3 cursor-pointer"
-              >
-                {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
-              </button>
-            </form>
-
-            {/* Quick Auto Login */}
-            <div className="pt-4 border-t border-slate-900/60 mt-4">
-              <button
-                type="button"
-                onClick={() => performAutoLogin('Shanmukha', 'Shanmukha29*')}
-                disabled={loading}
-                className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold rounded-xl text-xs border border-emerald-900/25 hover:border-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-              >
-                ⚡ {language === 'te' ? 'యజమానిగా ఆటో లాగిన్ (Auto Login)' : 'Auto Login as Owner'}
-              </button>
-            </div>
-
-          </div>
-
-          {/* Quick Access to client portals */}
-          <div className="flex justify-center gap-5 text-xs font-semibold pt-2">
-            <button
-              onClick={() => setRole('public')}
-              className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              📺 {language === 'te' ? 'పబ్లిక్ డిస్‌ప్లే టీవీ' : 'Open Public Display TV'}
-            </button>
-            <span className="text-slate-800">|</span>
-            <button
-              onClick={() => setRole('customer')}
-              className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              📱 {language === 'te' ? 'కస్టమర్ మొబైల్ పోర్టల్' : 'Open Customer App'}
-            </button>
-          </div>
-
         </div>
       </div>
     );
