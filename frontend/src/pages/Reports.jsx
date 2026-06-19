@@ -14,7 +14,7 @@ export default function Reports({ backendUrl, userToken, language }) {
 
   const fetchReports = async () => {
     try {
-      const dailyRes = await fetch(`${backendUrl}/api/reports/daily`, {
+      const dailyRes = await fetch(`${backendUrl}/api/reports/daily?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${userToken}` }
       });
       if (dailyRes.ok) {
@@ -22,7 +22,7 @@ export default function Reports({ backendUrl, userToken, language }) {
         setDailyData(dData);
       }
 
-      const trendsRes = await fetch(`${backendUrl}/api/reports/trends`, {
+      const trendsRes = await fetch(`${backendUrl}/api/reports/trends?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${userToken}` }
       });
       if (trendsRes.ok) {
@@ -30,7 +30,7 @@ export default function Reports({ backendUrl, userToken, language }) {
         setTrends(tData);
       }
 
-      const stockRes = await fetch(`${backendUrl}/api/stock`, {
+      const stockRes = await fetch(`${backendUrl}/api/stock?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${userToken}` }
       });
       if (stockRes.ok) {
@@ -39,7 +39,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       }
 
       // Fetch customer sales for Excel export
-      const custRes = await fetch(`${backendUrl}/api/reports/customer-sales`, {
+      const custRes = await fetch(`${backendUrl}/api/reports/customer-sales?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${userToken}` }
       });
       if (custRes.ok) {
