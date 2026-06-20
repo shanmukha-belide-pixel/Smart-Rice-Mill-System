@@ -383,7 +383,7 @@ async def send_email_otp(request: SendEmailOTPRequest):
     otp = f"{random.randint(100000, 999999)}"
     expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
     EMAIL_OTP_STORE[email] = {"otp": otp, "expires_at": expires_at}
-    success = EmailService.send_otp_email(email, otp)
+    success = await EmailService.send_otp_email(email, otp)
     print(f"[Email OTP] Email: {email} -> OTP: {otp}")
     if not success:
         raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")

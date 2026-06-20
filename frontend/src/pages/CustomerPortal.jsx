@@ -263,34 +263,29 @@ export default function CustomerPortal({ backendUrl, language }) {
                   <div className="relative">
                     <Key className="absolute left-4 top-3.5 text-slate-500 w-4 h-4" />
                     <input
-                      type="text"
-                      required
-                      maxLength="6"
-                      pattern="[0-9]{6}"
-                      placeholder={language === 'te' ? 'ఉదా: 123456' : 'e.g., 123456'}
-                      className="w-full bg-slate-950 border border-slate-850 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 font-mono tracking-widest text-center text-lg font-bold"
+                      type="text" required maxLength="6" pattern="[0-9]{6}" autoFocus
+                      placeholder="• • • • • •"
+                      className="w-full bg-slate-950 border border-amber-700/40 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-amber-300 font-mono tracking-[0.4em] text-center text-lg font-bold"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     />
                   </div>
+                  <p className="text-[10px] text-amber-500/50 text-center font-mono">
+                    💡 {language === 'te' ? 'పరీక్ష కోడ్: 123456' : 'Test code: 123456'}
+                  </p>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsOtpSent(false);
-                      setOtp('');
-                      setErrorMsg('');
-                    }}
+                    onClick={() => { setIsOtpSent(false); setOtp(''); setErrorMsg(''); }}
                     className="flex-1 bg-slate-850 hover:bg-slate-800 text-slate-350 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 cursor-pointer uppercase tracking-wider"
                   >
                     {language === 'te' ? 'వెనుకకు' : 'Back'}
                   </button>
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                    type="submit" disabled={loading}
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 py-3 rounded-xl text-xs font-extrabold transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
                   >
                     {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Verifying...') : (language === 'te' ? 'ధృవీకరించు' : 'Verify Code')}
                   </button>
