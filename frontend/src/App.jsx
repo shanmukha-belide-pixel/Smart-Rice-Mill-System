@@ -598,17 +598,6 @@ export default function App() {
                 </button>
               </form>
 
-              {/* Quick Auto Login */}
-              <div className="pt-4 border-t border-slate-900/60 mt-4">
-                <button
-                  type="button"
-                  onClick={() => performAutoLogin('Shanmukha', 'Shanmukha29*')}
-                  disabled={loading}
-                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-805 text-emerald-400 font-bold rounded-xl text-xs border border-emerald-900/25 hover:border-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-                >
-                  ⚡ {language === 'te' ? 'యజమానిగా ఆటో లాగిన్ (Auto Login)' : 'Auto Login as Owner'}
-                </button>
-              </div>
 
             </div>
 
