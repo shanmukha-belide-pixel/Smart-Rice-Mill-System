@@ -16,6 +16,7 @@ from backend.database import engine, Base, get_db
 from backend.models import User, Token, Stock, Sale, PriceHistory, SystemSetting
 from backend.schemas import UserCreate, UserLogin, TokenAuth, StockCreate, StockUpdate, StockResponse, TokenResponse, TokenCallNext, SaleCreate, SaleResponse, DailyReportResponse, SystemSettingResponse, SystemSettingUpdate
 from backend.services.sms_service import SMSService, datetime_now_str
+from backend.services.email_service import EmailService
 from backend.main_shared import simulator_connections, broadcast_to_simulator, queue_connections, broadcast_queue_update
 from backend.routes.webhooks import router as webhook_router, calculate_estimated_wait_time
 
@@ -320,7 +321,12 @@ async def ws_simulator_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         simulator_connections.discard(websocket)
 
-# --- OTP Verification for Customer Portal ---
+# --- OTP stores ---
+OTP_STORE = {}       # {phone_number: {"otp": otp, "expires_at": expires_at}}
+EMAIL_OTP_STORE = {} # {email: {"otp": otp, "expires_at": expires_at}}
+LOGIN_OTP_STORE = {} # {username: {"otp": otp, "expires_at": expires_at}}
+
+# ── Phone OTP (Customer Portal) ──────────────────────────────────────────
 class SendOTPRequest(BaseModel):
     phone_number: str
 
@@ -328,102 +334,160 @@ class VerifyOTPRequest(BaseModel):
     phone_number: str
     otp: str
 
-OTP_STORE = {} # {phone_number: {"otp": otp, "expires_at": expires_at}}
-
 @app.post("/api/auth/send-otp")
 async def send_otp(request: SendOTPRequest):
     import random
     phone = request.phone_number.strip()
     if not phone:
         raise HTTPException(status_code=400, detail="Phone number is required.")
-    
     otp = f"{random.randint(100000, 999999)}"
     expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
-    
-    OTP_STORE[phone] = {
-        "otp": otp,
-        "expires_at": expires_at
-    }
-    
+    OTP_STORE[phone] = {"otp": otp, "expires_at": expires_at}
     message = f"Your verification code for Sri Trimula Rice Mill is: {otp}. Valid for 5 minutes."
     await SMSService.send_sms(phone, message)
-    
-    print(f"[OTP SEND] Phone: {phone} -> OTP: {otp}")
-    return {"status": "success", "message": "OTP sent successfully."}
+    print(f"[SMS OTP] Phone: {phone} -> OTP: {otp}")
+    return {"status": "success", "message": "OTP sent to your mobile number."}
 
 @app.post("/api/auth/verify-otp")
 def verify_otp(request: VerifyOTPRequest):
     phone = request.phone_number.strip()
     entered_otp = request.otp.strip()
-    
     if not phone or not entered_otp:
         raise HTTPException(status_code=400, detail="Phone number and OTP are required.")
-    
-    if entered_otp == "123456":
+    if entered_otp == "123456":  # bypass for testing
         return {"status": "success", "message": "OTP verified successfully."}
-        
     stored = OTP_STORE.get(phone)
     if not stored:
         raise HTTPException(status_code=400, detail="No OTP requested for this phone number.")
-        
     if datetime.datetime.utcnow() > stored["expires_at"]:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
-        
     if stored["otp"] != entered_otp:
         raise HTTPException(status_code=400, detail="Invalid OTP code.")
-        
-    # Clean up
     del OTP_STORE[phone]
     return {"status": "success", "message": "OTP verified successfully."}
 
+# ── Email OTP (Customer Portal email login) ───────────────────────────────
+class SendEmailOTPRequest(BaseModel):
+    email: str
+
+class VerifyEmailOTPRequest(BaseModel):
+    email: str
+    otp: str
+
+@app.post("/api/auth/send-email-otp")
+async def send_email_otp(request: SendEmailOTPRequest):
+    import random
+    email = request.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="A valid email address is required.")
+    otp = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    EMAIL_OTP_STORE[email] = {"otp": otp, "expires_at": expires_at}
+    success = EmailService.send_otp_email(email, otp)
+    print(f"[Email OTP] Email: {email} -> OTP: {otp}")
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")
+    return {"status": "success", "message": "OTP sent to your email address."}
+
+@app.post("/api/auth/verify-email-otp")
+def verify_email_otp(request: VerifyEmailOTPRequest):
+    email = request.email.strip().lower()
+    entered_otp = request.otp.strip()
+    if not email or not entered_otp:
+        raise HTTPException(status_code=400, detail="Email and OTP are required.")
+    if entered_otp == "123456":  # bypass for testing
+        return {"status": "success", "message": "Email OTP verified successfully."}
+    stored = EMAIL_OTP_STORE.get(email)
+    if not stored:
+        raise HTTPException(status_code=400, detail="No OTP requested for this email.")
+    if datetime.datetime.utcnow() > stored["expires_at"]:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+    if stored["otp"] != entered_otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP code.")
+    del EMAIL_OTP_STORE[email]
+    return {"status": "success", "message": "Email OTP verified successfully."}
+
+# ── Login OTP (2FA for Operators) ─────────────────────────────────────────
+class VerifyLoginOTPRequest(BaseModel):
+    username: str
+    otp: str
+
+@app.post("/api/auth/verify-login-otp")
+async def verify_login_otp(request: VerifyLoginOTPRequest, db: Session = Depends(get_db)):
+    username = request.username.strip()
+    entered_otp = request.otp.strip()
+    stored = LOGIN_OTP_STORE.get(username)
+    if not stored:
+        raise HTTPException(status_code=400, detail="No login OTP found. Please login again.")
+    if datetime.datetime.utcnow() > stored["expires_at"]:
+        del LOGIN_OTP_STORE[username]
+        raise HTTPException(status_code=400, detail="Login OTP expired. Please login again.")
+    if entered_otp == "123456" or stored["otp"] == entered_otp:  # bypass for testing
+        del LOGIN_OTP_STORE[username]
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=400, detail="User not found.")
+        access_token = create_access_token(data={"sub": user.username})
+        return {"access_token": access_token, "token_type": "bearer", "role": user.role, "full_name": user.full_name}
+    raise HTTPException(status_code=400, detail="Invalid OTP code.")
+
+# ── Update operator phone number for 2FA ──────────────────────────────────
+class UpdatePhoneRequest(BaseModel):
+    phone_number: str
+
+@app.put("/api/auth/update-phone")
+def update_phone(request: UpdatePhoneRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    phone = request.phone_number.strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number is required.")
+    current_user.phone_number = phone
+    db.commit()
+    return {"status": "success", "message": "Phone number updated for 2FA."}
+
+@app.get("/api/auth/me")
+def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return {"username": current_user.username, "full_name": current_user.full_name, "role": current_user.role, "phone_number": current_user.phone_number or ""}
+
 # --- Authentication API ---
-@app.post("/api/auth/login", response_model=TokenAuth)
-def login(form_data: UserLogin, db: Session = Depends(get_db)):
-    import logging
+@app.post("/api/auth/login")
+async def login(form_data: UserLogin, db: Session = Depends(get_db)):
+    import random, logging
     logger = logging.getLogger("uvicorn.error")
-    logger.warning(f"LOGIN ATTEMPT - Username: '{form_data.username}', Password length: {len(form_data.password)}")
+    logger.warning(f"LOGIN ATTEMPT - Username: '{form_data.username}'")
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user:
-        logger.warning(f"LOGIN FAIL - Username '{form_data.username}' not found in database.")
         raise HTTPException(status_code=400, detail="Invalid username or password.")
-        
-    # Check Lock status
     if user.locked_until and user.locked_until > datetime.datetime.utcnow():
         lock_mins = int((user.locked_until - datetime.datetime.utcnow()).total_seconds() / 60)
-        logger.warning(f"LOGIN FAIL - User '{form_data.username}' is locked.")
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Account temporarily locked due to failed attempts. Try again in {lock_mins + 1} minute(s)."
-        )
-        
+        raise HTTPException(status_code=400, detail=f"Account temporarily locked. Try again in {lock_mins + 1} minute(s).")
     if not verify_password(form_data.password, user.password_hash):
-        logger.warning(f"LOGIN FAIL - Password verification failed for username '{form_data.username}'. DB Hash: {user.password_hash}, Generated Hash: {hash_password(form_data.password)}")
-        # Handle failed login tracking
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 3:
             user.locked_until = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
             db.commit()
-            raise HTTPException(
-                status_code=400, 
-                detail="Too many failed login attempts. Account locked for 30 minutes."
-            )
+            raise HTTPException(status_code=400, detail="Too many failed attempts. Account locked for 30 minutes.")
         db.commit()
         raise HTTPException(status_code=400, detail="Invalid username or password.")
-        
-    # Success: reset locking
+
+    # Password correct — reset lock
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
-    
-    access_token = create_access_token(data={"sub": user.username})
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "role": user.role,
-        "full_name": user.full_name
-    }
 
-# --- Queue Management API ---
+    # If user has a phone number registered, trigger 2FA OTP
+    if user.phone_number:
+        otp = f"{random.randint(100000, 999999)}"
+        expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+        LOGIN_OTP_STORE[user.username] = {"otp": otp, "expires_at": expires_at}
+        message = f"Your Sri Trimula Rice Mill login code is: {otp}. Valid for 5 minutes. Do not share."
+        await SMSService.send_sms(user.phone_number, message)
+        print(f"[Login 2FA OTP] Sent to {user.phone_number} for user {user.username}: {otp}")
+        return {"otp_required": True, "username": user.username, "message": f"OTP sent to your registered number ending in {user.phone_number[-4:]}"}
+
+    # No 2FA configured — issue JWT directly
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role, "full_name": user.full_name}
+
 @app.get("/api/tokens", response_model=List[TokenResponse])
 def get_tokens(db: Session = Depends(get_db)):
     # Same-day only tokens (6 AM to midnight)

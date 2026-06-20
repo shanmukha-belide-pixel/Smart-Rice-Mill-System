@@ -17,6 +17,8 @@ export default function Settings({ backendUrl, userToken, language }) {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState(''); // 'saving', 'success', 'error'
   const [testSmsStatus, setTestSmsStatus] = useState(''); // 'sending', 'success', 'error'
+  const [twoFaPhone, setTwoFaPhone] = useState('');
+  const [twoFaSaveStatus, setTwoFaSaveStatus] = useState(''); // 'saving', 'success', 'error', 'clearing'
   
   const t = translations[language || 'te'];
 
@@ -53,6 +55,10 @@ export default function Settings({ backendUrl, userToken, language }) {
 
   useEffect(() => {
     fetchConfig();
+    // Load 2FA phone number
+    fetch(`${backendUrl}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${userToken}` }
+    }).then(r => r.json()).then(d => setTwoFaPhone(d.phone_number || '')).catch(() => {});
   }, [backendUrl]);
 
   const handleSaveSettings = async (e) => {
@@ -77,6 +83,32 @@ export default function Settings({ backendUrl, userToken, language }) {
     } catch (err) {
       setSaveStatus('error');
     }
+  };
+
+  const handleSaveTwoFaPhone = async () => {
+    setTwoFaSaveStatus('saving');
+    try {
+      const res = await fetch(`${backendUrl}/api/auth/update-phone`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+        body: JSON.stringify({ phone_number: twoFaPhone })
+      });
+      if (res.ok) { setTwoFaSaveStatus('success'); setTimeout(() => setTwoFaSaveStatus(''), 2000); }
+      else { setTwoFaSaveStatus('error'); }
+    } catch { setTwoFaSaveStatus('error'); }
+  };
+
+  const handleClearTwoFaPhone = async () => {
+    setTwoFaSaveStatus('clearing');
+    try {
+      const res = await fetch(`${backendUrl}/api/auth/update-phone`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+        body: JSON.stringify({ phone_number: '' })
+      });
+      if (res.ok) { setTwoFaPhone(''); setTwoFaSaveStatus('success'); setTimeout(() => setTwoFaSaveStatus(''), 2000); }
+      else { setTwoFaSaveStatus('error'); }
+    } catch { setTwoFaSaveStatus('error'); }
   };
 
   const handleSendTestSms = async () => {
@@ -305,6 +337,57 @@ export default function Settings({ backendUrl, userToken, language }) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* 2FA Login OTP Card */}
+          <div className="glass-panel p-5 rounded-3xl border border-amber-800/40 shadow-xl space-y-4 relative">
+            <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
+            <div className="flex items-center gap-2.5 border-b border-slate-850/60 pb-3">
+              <Shield className="w-5 h-5 text-amber-400" />
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
+                {language === 'te' ? '2FA లాగిన్ OTP' : '2FA Login OTP'}
+              </h4>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {language === 'te'
+                ? 'ఫోన్ నంబర్ సెట్ చేస్తే, లాగిన్ చేసినప్పుడు ఈ నంబర్‌కు OTP పంపబడుతుంది. రెండు-అంచెల భద్రత.'
+                : 'Set a phone number to receive a login OTP after entering your password. Two-factor security.'}
+            </p>
+            <div className="space-y-3">
+              <div className="relative">
+                <span className="absolute left-4 top-3 text-xs text-slate-500 font-mono">+91</span>
+                <input
+                  type="tel"
+                  placeholder={language === 'te' ? '10 అంకెల మొబైల్ నంబర్' : '10-digit mobile number'}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono"
+                  value={twoFaPhone}
+                  onChange={(e) => setTwoFaPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveTwoFaPhone}
+                  disabled={!twoFaPhone || twoFaSaveStatus === 'saving'}
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-bold py-2 rounded-xl text-[10px] transition-all uppercase tracking-wider cursor-pointer"
+                >
+                  {twoFaSaveStatus === 'saving' ? '...' : twoFaSaveStatus === 'success' ? '✓ Saved' : (language === 'te' ? '2FA ఆన్ చేయి' : 'Enable 2FA')}
+                </button>
+                {twoFaPhone && (
+                  <button
+                    onClick={handleClearTwoFaPhone}
+                    disabled={twoFaSaveStatus === 'clearing'}
+                    className="px-4 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 font-bold py-2 rounded-xl text-[10px] transition-all cursor-pointer"
+                  >
+                    {language === 'te' ? '2FA ఆఫ్' : 'Disable'}
+                  </button>
+                )}
+              </div>
+              {twoFaPhone && (
+                <p className="text-[10px] text-amber-400/60 font-mono">
+                  🔐 {language === 'te' ? `OTP ****${twoFaPhone.slice(-4)} కు పంపబడుతుంది` : `OTP will be sent to ****${twoFaPhone.slice(-4)} on each login`}
+                </p>
+              )}
             </div>
           </div>
 

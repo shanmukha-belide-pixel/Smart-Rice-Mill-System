@@ -15,13 +15,19 @@ const BACKEND_URL = window.location.hostname === 'localhost' || window.location.
   : 'https://smart-rice-mill-backend.onrender.com';
 
 export default function App() {
-  const [role, setRole] = useState(null); // 'owner', 'staff', 'accountant', 'public', 'customer'
+  const [role, setRole] = useState(null);
   const [token, setToken] = useState(null);
   const [fullName, setFullName] = useState('');
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Login 2FA OTP step
+  const [otpStep, setOtpStep] = useState(false); // true = show OTP input after password
+  const [loginOtp, setLoginOtp] = useState('');
+  const [otpUsername, setOtpUsername] = useState('');
+  const [otpHint, setOtpHint] = useState('');
   
   const [toasts, setToasts] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -174,26 +180,29 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     setLoginError('');
-
     try {
       const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm),
       });
-
       if (res.ok) {
         const data = await res.json();
+        // 2FA required — show OTP step
+        if (data.otp_required) {
+          setOtpStep(true);
+          setOtpUsername(data.username);
+          setOtpHint(data.message || 'OTP sent to your registered phone number.');
+          setLoading(false);
+          return;
+        }
+        // Direct login (no 2FA configured)
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
-        
-        // Session stored in memory only (no auto-login)
-
         if (data.role === 'staff') setCurrentTab('dashboard');
         else if (data.role === 'accountant') setCurrentTab('reports');
         else setCurrentTab('dashboard');
-
         setupSessionTimeout();
       } else {
         const err = await res.json();
@@ -201,6 +210,42 @@ export default function App() {
       }
     } catch (err) {
       setLoginError('Could not connect to backend server. Make sure API is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyLoginOtp = async (e) => {
+    e.preventDefault();
+    if (!loginOtp || loginOtp.length !== 6) {
+      setLoginError(language === 'te' ? 'దయచేసి 6 అంకెల OTP నమోదు చేయండి.' : 'Please enter the 6-digit OTP.');
+      return;
+    }
+    setLoading(true);
+    setLoginError('');
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/verify-login-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: otpUsername, otp: loginOtp }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.access_token);
+        setRole(data.role);
+        setFullName(data.full_name);
+        setOtpStep(false);
+        setLoginOtp('');
+        if (data.role === 'staff') setCurrentTab('dashboard');
+        else if (data.role === 'accountant') setCurrentTab('reports');
+        else setCurrentTab('dashboard');
+        setupSessionTimeout();
+      } else {
+        const err = await res.json();
+        setLoginError(err.detail || 'Invalid OTP.');
+      }
+    } catch (err) {
+      setLoginError('Could not connect to server.');
     } finally {
       setLoading(false);
     }
@@ -514,90 +559,100 @@ export default function App() {
             </div>
 
             {/* Form Box */}
-            <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-emerald-500/20 transition-colors duration-500">
-              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-              
-              {/* Language Tabs inside form for prominent switching */}
+            <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-amber-500/20 transition-colors duration-500">
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-700/40 to-transparent" />
+
+              {/* Language Tabs */}
               <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLanguage('te');
-                    localStorage.setItem('language', 'te');
-                  }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                    language === 'te'
-                      ? 'bg-slate-900 text-emerald-400 border border-slate-800 shadow-md'
-                      : 'text-slate-500 hover:text-slate-400'
-                  }`}
-                >
+                <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
                   తెలుగు (Telugu)
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLanguage('en');
-                    localStorage.setItem('language', 'en');
-                  }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                    language === 'en'
-                      ? 'bg-slate-900 text-emerald-400 border border-slate-800 shadow-md'
-                      : 'text-slate-500 hover:text-slate-400'
-                  }`}
-                >
+                <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
                   English
                 </button>
               </div>
 
-              <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
-              </h2>
-              
               {loginError && (
-                <div className="bg-rose-950/40 border border-rose-900/30 text-rose-455 p-3.5 rounded-xl text-xs flex items-center gap-2">
-                  <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0" />
+                <div className="bg-rose-950/40 border border-rose-900/30 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                   <span>{translateError(loginError)}</span>
                 </div>
               )}
 
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">
-                    {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={language === 'te' ? 'ఉదా: owner / staff' : 'owner / staff / accountant'}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-medium"
-                    value={loginForm.username}
-                    onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                  />
-                </div>
+              {/* Step 1: Username + Password */}
+              {!otpStep && (
+                <>
+                  <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
+                  </h2>
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-400">
+                        {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
+                      </label>
+                      <input
+                        type="text" required
+                        placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-medium"
+                        value={loginForm.username}
+                        onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-400">
+                        {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
+                      </label>
+                      <input
+                        type="password" required placeholder="••••••••"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                      />
+                    </div>
+                    <button type="submit" disabled={loading}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
+                      {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
+                    </button>
+                  </form>
+                </>
+              )}
 
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">
-                    {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 placeholder:text-slate-650 transition-all font-mono"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-emerald-950/30 mt-3 cursor-pointer"
-                >
-                  {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
-                </button>
-              </form>
-
+              {/* Step 2: Login OTP (2FA) */}
+              {otpStep && (
+                <>
+                  <div className="text-center space-y-1">
+                    <div className="text-2xl">🔐</div>
+                    <h2 className="text-sm font-bold text-amber-400">
+                      {language === 'te' ? 'రెండు-అంచెల ధృవీకరణ' : 'Two-Factor Verification'}
+                    </h2>
+                    <p className="text-xs text-slate-400">{otpHint}</p>
+                  </div>
+                  <form onSubmit={handleVerifyLoginOtp} className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-400">
+                        {language === 'te' ? '6-అంకెల OTP కోడ్' : '6-Digit OTP Code'}
+                      </label>
+                      <input
+                        type="text" maxLength={6} required autoFocus
+                        placeholder="• • • • • •"
+                        className="w-full bg-slate-950 border border-amber-700/50 rounded-xl px-4 py-3 text-xl text-center tracking-[0.5em] focus:outline-none focus:ring-1 focus:ring-amber-500 text-amber-300 placeholder:text-slate-600 transition-all font-mono"
+                        value={loginOtp}
+                        onChange={(e) => setLoginOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      />
+                    </div>
+                    <button type="submit" disabled={loading}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 cursor-pointer">
+                      {loading ? 'Verifying...' : (language === 'te' ? 'OTP ధృవీకరించు' : 'Verify OTP')}
+                    </button>
+                    <button type="button" onClick={() => { setOtpStep(false); setLoginOtp(''); setLoginError(''); }}
+                      className="w-full text-slate-500 hover:text-slate-300 text-xs py-2 transition-colors cursor-pointer">
+                      ← {language === 'te' ? 'వెనుకకు వెళ్ళు' : 'Back to login'}
+                    </button>
+                  </form>
+                  </>
+              )}
 
             </div>
 

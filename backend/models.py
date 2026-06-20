@@ -10,6 +10,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False) # 'owner', 'staff', 'accountant'
     full_name = Column(String, nullable=False)
+    phone_number = Column(String, nullable=True) # For Login OTP (2FA)
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
 
