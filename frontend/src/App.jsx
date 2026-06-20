@@ -159,25 +159,7 @@ export default function App() {
     localStorage.setItem('language', nextLang);
   };
 
-  // Load session from storage if active
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedRole = localStorage.getItem('role');
-    const savedName = localStorage.getItem('name');
-    
-    if (savedToken && savedRole && savedName) {
-      setToken(savedToken);
-      setRole(savedRole);
-      setFullName(savedName);
-      
-      // Auto routing based on role
-      if (savedRole === 'staff') setCurrentTab('dashboard');
-      else if (savedRole === 'accountant') setCurrentTab('reports');
-      else setCurrentTab('dashboard');
-
-      setupSessionTimeout();
-    }
-  }, []);
+  // Auto-login disabled: always show login page on every visit
 
   // Set up 30-minute session timeout
   const setupSessionTimeout = () => {
@@ -206,9 +188,7 @@ export default function App() {
         setRole(data.role);
         setFullName(data.full_name);
         
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('name', data.full_name);
+        // Session stored in memory only (no auto-login)
 
         if (data.role === 'staff') setCurrentTab('dashboard');
         else if (data.role === 'accountant') setCurrentTab('reports');
@@ -242,9 +222,7 @@ export default function App() {
         setRole(data.role);
         setFullName(data.full_name);
         
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('name', data.full_name);
+        // Session stored in memory only (no auto-login)
 
         if (data.role === 'staff') setCurrentTab('dashboard');
         else if (data.role === 'accountant') setCurrentTab('reports');
