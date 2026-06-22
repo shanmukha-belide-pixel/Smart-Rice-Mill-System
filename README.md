@@ -74,13 +74,6 @@ Navigate to the `/frontend` directory:
 
 ---
 
-## 🔑 Default Credentials
-
-Sign in with the custom administrative owner account:
-* **Owner/Administrator Dashboard:**
-  * **Username:** `Shanmukha`
-  * **Password:** `Shanmukha29*`
-
 ---
 
 ## 📋 Offline SMS Commands (Simulator)
