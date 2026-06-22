@@ -10,9 +10,16 @@ import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, B
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
-const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://127.0.0.1:8000'
+const BACKEND_URL = (
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1' || 
+  window.location.hostname.startsWith('192.168.') || 
+  window.location.hostname.startsWith('10.') || 
+  window.location.hostname.startsWith('172.')
+)
+  ? `${window.location.protocol}//${window.location.hostname}:8000`
   : 'https://smart-rice-mill-backend.onrender.com';
+
 
 export default function App() {
   const [role, setRole] = useState(() => localStorage.getItem('role') || null);
