@@ -58,6 +58,21 @@ async def register_customer_token(db: Session, phone_number: str, priority: bool
     ).first()
     
     if existing:
+        # Find position (how many 'waiting' tokens are ahead)
+        ahead = db.query(Token).filter(
+            Token.status == "waiting",
+            Token.created_at >= start_of_day,
+            Token.created_at < existing.created_at
+        ).count()
+        wait_time = calculate_estimated_wait_time(db, ahead + 1)
+        
+        # Send SMS reminder with current token details
+        mill = SMSService.get_mill_name()
+        telugu = f"నమస్కారం! మీ టోకెన్ {existing.token_number} ఇప్పటికే నమోదై ఉంది.\n{ahead} మంది ముందున్నారు. సమయం ~{wait_time} ని. - {mill}"
+        english = f"Hello! Your token {existing.token_number} is already registered.\n{ahead} ahead. Wait ~{wait_time} mins. - {mill}"
+        sms_text = f"{telugu}\n\n{english}"
+        
+        await SMSService.send_sms(phone_number, sms_text)
         return existing
         
     # Generate new token
@@ -134,7 +149,7 @@ async def handle_incoming_sms(
     today = datetime.date.today()
     start_of_day = datetime.datetime.combine(today, datetime.time.min)
     
-    if cmd in ["TOKEN", "HI", "HELLO"]:
+    if any(keyword in cmd for keyword in ["TOKEN", "TKN", "HI", "HELLO"]):
         # Register a new token
         token = await register_customer_token(db, phone)
         if token is None:
