@@ -35,7 +35,7 @@ app.add_middleware(
 )
 
 # JWT config
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "sritirumalamilkeysecret98765")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "sritrimulamilkeysecret98765")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -47,9 +47,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 # We will use hashlib with salt for secure and clean zero-dep hashing to avoid installation hurdles on Windows)
 import hashlib
 
+# NOTE: salt must never be changed once passwords are stored in the DB
+# Changing the salt invalidates all existing password hashes
+PASSWORD_SALT = "sritrimulasalt"
+
 def hash_password(password: str) -> str:
-    salt = "sritirumalasalt"
-    return hashlib.sha256((password + salt).encode()).hexdigest()
+    return hashlib.sha256((password + PASSWORD_SALT).encode()).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return hash_password(plain_password) == hashed_password
