@@ -15,10 +15,10 @@ const BACKEND_URL = window.location.hostname === 'localhost' || window.location.
   : 'https://smart-rice-mill-backend.onrender.com';
 
 export default function App() {
-  const [role, setRole] = useState(null);
-  const [token, setToken] = useState(null);
-  const [fullName, setFullName] = useState('');
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const [role, setRole] = useState(() => localStorage.getItem('role') || null);
+  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+  const [fullName, setFullName] = useState(() => localStorage.getItem('name') || '');
+  const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('currentTab') || 'dashboard');
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -200,9 +200,12 @@ export default function App() {
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
-        if (data.role === 'staff') setCurrentTab('dashboard');
-        else if (data.role === 'accountant') setCurrentTab('reports');
-        else setCurrentTab('dashboard');
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('name', data.full_name);
+        const tab = data.role === 'accountant' ? 'reports' : 'dashboard';
+        setCurrentTab(tab);
+        localStorage.setItem('currentTab', tab);
         setupSessionTimeout();
       } else {
         const err = await res.json();
@@ -234,11 +237,14 @@ export default function App() {
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('name', data.full_name);
         setOtpStep(false);
         setLoginOtp('');
-        if (data.role === 'staff') setCurrentTab('dashboard');
-        else if (data.role === 'accountant') setCurrentTab('reports');
-        else setCurrentTab('dashboard');
+        const tab2 = data.role === 'accountant' ? 'reports' : 'dashboard';
+        setCurrentTab(tab2);
+        localStorage.setItem('currentTab', tab2);
         setupSessionTimeout();
       } else {
         const err = await res.json();
@@ -266,13 +272,12 @@ export default function App() {
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
-        
-        // Session stored in memory only (no auto-login)
-
-        if (data.role === 'staff') setCurrentTab('dashboard');
-        else if (data.role === 'accountant') setCurrentTab('reports');
-        else setCurrentTab('dashboard');
-
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('name', data.full_name);
+        const tab3 = data.role === 'accountant' ? 'reports' : 'dashboard';
+        setCurrentTab(tab3);
+        localStorage.setItem('currentTab', tab3);
         setupSessionTimeout();
       } else {
         const err = await res.json();
@@ -289,11 +294,31 @@ export default function App() {
     setToken(null);
     setRole(null);
     setFullName('');
+    setCurrentTab('dashboard');
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('name');
+    localStorage.removeItem('currentTab');
     if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
   };
+
+  // On startup: validate stored token with backend; clear if expired
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) return;
+    fetch(`${BACKEND_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` }
+    })
+      .then(res => {
+        if (!res.ok) {
+          // Token is expired or invalid — force logout
+          handleLogout();
+        }
+      })
+      .catch(() => {
+        // Backend unreachable — keep session so data is still visible offline
+      });
+  }, []);
 
   useEffect(() => {
     window.showToast = showToast;
