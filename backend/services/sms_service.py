@@ -102,7 +102,7 @@ class SMSService:
                 return settings.mill_name
         except Exception:
             pass
-        return "Sri Trimula Rice Mill"
+        return "Sri Tirumala Rice Mill"
 
     @staticmethod
     def get_token_sms_text(token_number: str, position: int, wait_time: int) -> str:

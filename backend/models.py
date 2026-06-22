@@ -68,7 +68,7 @@ class SystemSetting(Base):
     __tablename__ = "system_settings"
     
     id = Column(Integer, primary_key=True, index=True)
-    mill_name = Column(String, default="Sri Trimula Rice Mill")
+    mill_name = Column(String, default="Sri Tirumala Rice Mill")
     virtual_number = Column(String, default="+917075295440")
     holiday_mode = Column(Boolean, default=False)
     queue_hold = Column(Boolean, default=False)

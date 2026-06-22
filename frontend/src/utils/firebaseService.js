@@ -2,7 +2,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
-// Firebase Real-time Data Sync Service for Sri Trimula Rice Mill
+// Firebase Real-time Data Sync Service for Sri Tirumala Rice Mill
 const MOCK_BIN_URL = 'https://extendsclass.com/api/json-storage/bin/ccfedec';
 
 // Placeholder Firebase Config (User can replace with real credentials)
@@ -68,7 +68,7 @@ const triggerWebsocketRefresh = () => {
 const getInitialState = () => ({
   settings: {
     id: 1,
-    mill_name: 'Sri Trimula Rice Mill',
+    mill_name: 'Sri Tirumala Rice Mill',
     virtual_number: '+917075295440',
     holiday_mode: false,
     queue_hold: false,

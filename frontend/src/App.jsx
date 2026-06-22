@@ -548,6 +548,20 @@ export default function App() {
           <div className="w-full max-w-md space-y-8 animate-fade-in">
             {/* Logo Title */}
             <div className="text-center lg:text-left space-y-3">
+              {/* Mobile Logo Image */}
+              <div className="lg:hidden flex justify-center mb-4">
+                <div className="w-20 h-20 bg-slate-950/40 rounded-2xl border border-slate-800/80 p-2 shadow-lg flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={`${import.meta.env.BASE_URL}login_illustration.png`} 
+                    alt="Sri Tirumala Rice Mill Logo" 
+                    className="w-full h-full object-contain rounded-xl select-none"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
+                    }}
+                  />
+                </div>
+              </div>
               <div className="space-y-1">
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400 uppercase select-none">
                   {t.appName}
@@ -747,6 +761,17 @@ export default function App() {
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-950/60 border border-slate-800 flex items-center justify-center p-0.5 overflow-hidden shadow-inner">
+            <img 
+              src={`${import.meta.env.BASE_URL}login_illustration.png`} 
+              alt="Sri Tirumala Rice Mill Logo" 
+              className="w-full h-full object-contain rounded-md"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
+              }}
+            />
+          </div>
           <div>
             <h1 className="font-black text-sm md:text-base text-slate-100 uppercase tracking-wider">{t.appName}</h1>
             <span className="text-[9px] text-slate-500 font-mono uppercase tracking-widest font-bold">{t.workspaceConsole}</span>
@@ -958,7 +983,7 @@ export default function App() {
       <footer className="bg-slate-955 px-6 py-3.5 border-t border-slate-900 text-[9px] text-slate-600 text-center font-mono uppercase tracking-widest">
         {language === 'te' 
           ? 'శ్రీ తిరుమల రైస్ మిల్ కన్సోల్ • 30 నిమిషాల నిష్క్రియ తర్వాత సెషన్ స్వయంచాలకంగా లాక్ చేయబడుతుంది'
-          : 'Sri Trimula Mill console • Session automatically locks after 30 minutes of inactivity'}
+          : 'Sri Tirumala Mill console • Session automatically locks after 30 minutes of inactivity'}
       </footer>
 
       {/* Mobile Bottom Navigation Bar */}

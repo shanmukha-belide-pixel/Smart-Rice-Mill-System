@@ -1,6 +1,6 @@
-# 🌾 Sri Trimula Rice Mill App
+# 🌾 Sri Tirumala Rice Mill App
 
-A modern, high-performance Queue & Inventory Management system custom-tailored for **Sri Trimula Rice Mill** (Hanamkonda, Telangana). 
+A modern, high-performance Queue & Inventory Management system custom-tailored for **Sri Tirumala Rice Mill** (Hanamkonda, Telangana). 
 
 Designed to optimize customer throughput, automate rice stock levels, handle bilingual operations, and generate instant printable receipts.
 

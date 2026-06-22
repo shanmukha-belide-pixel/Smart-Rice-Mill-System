@@ -97,7 +97,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       try {
         // Construct CSV rows
         let csvContent = "\uFEFF"; // Add BOM for Excel UTF-8 support
-        csvContent += "Sri Trimula Rice Mill - Daily Reports & Financials\n";
+        csvContent += "Sri Tirumala Rice Mill - Daily Reports & Financials\n";
         csvContent += `Report Date,${dailyData.date}\n\n`;
         
         csvContent += "--- Daily Highlights ---\n";
@@ -152,7 +152,7 @@ export default function Reports({ backendUrl, userToken, language }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `Sri_Trimula_Report_${dailyData.date}.csv`);
+        link.setAttribute("download", `Sri_Tirumala_Report_${dailyData.date}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -168,7 +168,7 @@ export default function Reports({ backendUrl, userToken, language }) {
         printWindow.document.write(`
           <html>
             <head>
-              <title>Sri Trimula Rice Mill Report - ${dailyData.date}</title>
+              <title>Sri Tirumala Rice Mill Report - ${dailyData.date}</title>
               <style>
                 body {
                   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -269,7 +269,7 @@ export default function Reports({ backendUrl, userToken, language }) {
             <body>
               <div class="header-container">
                 <div>
-                  <h1>SRI TRIMULA RICE MILL</h1>
+                  <h1>SRI TIRUMALA RICE MILL</h1>
                   <span style="font-size: 11px; color: #64748b; font-weight: 600;">Daily Reports & Financials Console</span>
                 </div>
                 <div class="report-date">Date: ${dailyData.date}</div>
@@ -371,7 +371,7 @@ export default function Reports({ backendUrl, userToken, language }) {
               </table>
 
               <div class="footer">
-                Sri Trimula Rice Mill Operations Management Console • Report Generated: ${new Date().toLocaleString('en-IN')}
+                Sri Tirumala Rice Mill Operations Management Console • Report Generated: ${new Date().toLocaleString('en-IN')}
               </div>
               
               <script>

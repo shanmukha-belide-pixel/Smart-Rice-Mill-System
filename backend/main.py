@@ -23,7 +23,7 @@ from backend.routes.webhooks import router as webhook_router, calculate_estimate
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Sri Trimula Rice Mill API", version="1.1.0")  # v1.1.0: Added OTP auth endpoints
+app = FastAPI(title="Sri Tirumala Rice Mill API", version="1.1.0")  # v1.1.0: Added OTP auth endpoints
 
 # CORS middleware config
 app.add_middleware(
@@ -35,7 +35,7 @@ app.add_middleware(
 )
 
 # JWT config
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "sritrimulamilkeysecret98765")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "sritirumalamilkeysecret98765")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -48,7 +48,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 import hashlib
 
 def hash_password(password: str) -> str:
-    salt = "sritrimulasalt"
+    salt = "sritirumalasalt"
     return hashlib.sha256((password + salt).encode()).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -68,7 +68,7 @@ def migrate_and_seed():
         # 2. Check if system_settings is seeded
         if db.query(SystemSetting).count() == 0:
             default_setting = SystemSetting(
-                mill_name="Sri Trimula Rice Mill",
+                mill_name="Sri Tirumala Rice Mill",
                 virtual_number="+917075295440",
                 holiday_mode=False,
                 queue_hold=False,
@@ -80,10 +80,10 @@ def migrate_and_seed():
             print("Successfully seeded default system settings.")
         else:
             settings = db.query(SystemSetting).first()
-            if settings and settings.mill_name == "Sri Lakshmi Rice Mill":
-                settings.mill_name = "Sri Trimula Rice Mill"
+            if settings and settings.mill_name in ["Sri Lakshmi Rice Mill", "Sri Trimula Rice Mill", "Sri Triumala Rice Mill"]:
+                settings.mill_name = "Sri Tirumala Rice Mill"
                 db.commit()
-                print("Successfully updated database seeded name to Sri Trimula Rice Mill.")
+                print("Successfully updated database seeded name to Sri Tirumala Rice Mill.")
     except Exception as e:
         print(f"Migration/Seeding failed: {e}")
     finally:
@@ -177,7 +177,7 @@ async def daily_report_sms_loop():
                     db = next(get_db())
                     try:
                         settings = db.query(SystemSetting).first()
-                        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+                        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
                         today_date = datetime.date.today()
                         start_of_day = datetime.datetime.combine(today_date, datetime.time.min)
                         
@@ -343,7 +343,7 @@ async def send_otp(request: SendOTPRequest):
     otp = f"{random.randint(100000, 999999)}"
     expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
     OTP_STORE[phone] = {"otp": otp, "expires_at": expires_at}
-    message = f"Your verification code for Sri Trimula Rice Mill is: {otp}. Valid for 5 minutes."
+    message = f"Your verification code for Sri Tirumala Rice Mill is: {otp}. Valid for 5 minutes."
     await SMSService.send_sms(phone, message)
     print(f"[SMS OTP] Phone: {phone} -> OTP: {otp}")
     return {"status": "success", "message": "OTP sent to your mobile number."}
@@ -479,7 +479,7 @@ async def login(form_data: UserLogin, db: Session = Depends(get_db)):
         otp = f"{random.randint(100000, 999999)}"
         expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
         LOGIN_OTP_STORE[user.username] = {"otp": otp, "expires_at": expires_at}
-        message = f"Your Sri Trimula Rice Mill login code is: {otp}. Valid for 5 minutes. Do not share."
+        message = f"Your Sri Tirumala Rice Mill login code is: {otp}. Valid for 5 minutes. Do not share."
         await SMSService.send_sms(user.phone_number, message)
         print(f"[Login 2FA OTP] Sent to {user.phone_number} for user {user.username}: {otp}")
         return {"otp_required": True, "username": user.username, "message": f"OTP sent to your registered number ending in {user.phone_number[-4:]}"}

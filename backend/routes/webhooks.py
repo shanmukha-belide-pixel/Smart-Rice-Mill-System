@@ -146,7 +146,7 @@ async def handle_incoming_sms(
         # Fetch prices of all varieties
         items = db.query(Stock).all()
         settings = db.query(SystemSetting).first()
-        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
         if not items:
             reply = f"Today's Prices @ {mill_name}:\nNo prices listed today. Open 6 AM."
         else:
@@ -169,7 +169,7 @@ async def handle_incoming_sms(
         ).first()
         
         settings = db.query(SystemSetting).first()
-        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
         
         if not token:
             reply = f"You do not have an active token today. SMS 'TOKEN' or give a missed call to register."
@@ -198,7 +198,7 @@ async def handle_incoming_sms(
         db.commit()
         
         settings = db.query(SystemSetting).first()
-        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
         
         from backend.main_shared import broadcast_queue_update
         await broadcast_queue_update()
@@ -209,7 +209,7 @@ async def handle_incoming_sms(
         
     else:
         settings = db.query(SystemSetting).first()
-        mill_name = settings.mill_name if settings else "Sri Trimula Rice Mill"
+        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
         reply = f"Invalid command. Supported: 'TOKEN' (register), 'PRICE' (rates), 'STATUS' (position), 'STOP' (cancel). - {mill_name}"
         await SMSService.send_sms(phone, reply)
         return Response(content="Help sent", media_type="text/plain")

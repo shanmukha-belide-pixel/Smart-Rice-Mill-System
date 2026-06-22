@@ -13,7 +13,7 @@ export default function SmsSimulator({ backendUrl, language, onActionTriggered }
       sender: 'System',
       text: language === 'te' 
         ? 'శ్రీ తిరుమల రైస్ మిల్ ఎస్ఎమ్ఎస్ సిమ్యులేటర్ ప్రారంభించబడింది. ఫోన్ నంబర్ నమోదు చేసి సేవలను పరీక్షించండి!'
-        : 'Sri Trimula Rice Mill SMS Simulator initialized. Dial a number and try registering!',
+        : 'Sri Tirumala Rice Mill SMS Simulator initialized. Dial a number and try registering!',
       timestamp: new Date().toLocaleTimeString(),
       type: 'system'
     }
@@ -46,7 +46,7 @@ export default function SmsSimulator({ backendUrl, language, onActionTriggered }
           setMessages((prev) => [
             ...prev,
             {
-              sender: 'Sri Trimula Rice Mill',
+              sender: 'Sri Tirumala Rice Mill',
               text: smsData.message,
               timestamp: new Date().toLocaleTimeString(),
               type: 'received',
@@ -85,7 +85,7 @@ export default function SmsSimulator({ backendUrl, language, onActionTriggered }
         const next = [...prev];
         next[0].text = language === 'te' 
           ? 'శ్రీ తిరుమల రైస్ మిల్ ఎస్ఎమ్ఎస్ సిమ్యులేటర్ ప్రారంభించబడింది. ఫోన్ నంబర్ నమోదు చేసి సేవలను పరీక్షించండి!'
-          : 'Sri Trimula Rice Mill SMS Simulator initialized. Dial a number and try registering!';
+          : 'Sri Tirumala Rice Mill SMS Simulator initialized. Dial a number and try registering!';
         return next;
       }
       return prev;
@@ -300,7 +300,7 @@ export default function SmsSimulator({ backendUrl, language, onActionTriggered }
             >
               {msg.type === 'received' && (
                 <div className="flex justify-between items-center text-[8px] text-slate-500 font-bold mb-1 border-b border-emerald-900/10 pb-0.5">
-                  <span className="text-emerald-500/80 tracking-wider font-mono">SRI TRIMULA MILL</span>
+                  <span className="text-emerald-500/80 tracking-wider font-mono">SRI TIRUMALA MILL</span>
                   <span className="text-[7px] bg-slate-900 text-slate-500 px-1 rounded uppercase tracking-wider font-mono">
                     {msg.provider}
                   </span>

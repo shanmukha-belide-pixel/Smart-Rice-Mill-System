@@ -280,7 +280,7 @@ const setupMockApi = () => {
               const smsInbox = getDB('ricemill_sms_inbox');
               smsInbox.unshift({
                 phone_number: '+919999999999',
-                message: `⚠️ Sri Trimula Mill Stock Alert: ${stock[idx].variety_name} low: ${newQty} kg (Threshold: ${newThreshold} kg). Reorder: 500 kg.`,
+                message: `⚠️ Sri Tirumala Mill Stock Alert: ${stock[idx].variety_name} low: ${newQty} kg (Threshold: ${newThreshold} kg). Reorder: 500 kg.`,
                 timestamp: new Date().toLocaleTimeString(),
                 provider: 'SIMULATOR'
               });
@@ -339,7 +339,7 @@ const setupMockApi = () => {
           setDB('ricemill_tokens', tokens);
 
           const smsInbox = getDB('ricemill_sms_inbox');
-          const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+          const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
           smsInbox.unshift({
             phone_number: newToken.phone_number,
             message: `నమస్కారం! మీ టోకెన్ ${tokenNum}.\n${ahead} మంది ముందున్నారు. సమయం ~${waitTime} ని. - ${millName}\n\nHello! Token ${tokenNum}.\n${ahead} ahead. Wait ~${waitTime} mins. - ${millName}`,
@@ -375,7 +375,7 @@ const setupMockApi = () => {
             setDB('ricemill_tokens', tokens);
 
             const settings = getDB('ricemill_settings');
-            const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+            const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
               phone_number: tokens[nextIndex].phone_number,
@@ -456,7 +456,7 @@ const setupMockApi = () => {
             setDB('ricemill_sales', sales);
 
             const settings = getDB('ricemill_settings');
-            const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+            const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
               phone_number: tokens[tokenIdx].phone_number,
@@ -477,7 +477,7 @@ const setupMockApi = () => {
             setDB('ricemill_tokens', tokens);
 
             const settings = getDB('ricemill_settings');
-            const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+            const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
             const smsInbox = getDB('ricemill_sms_inbox');
             smsInbox.unshift({
               phone_number: tokens[tokenIdx].phone_number,
@@ -634,7 +634,7 @@ const setupMockApi = () => {
         const cleanCmd = bodyText.trim().toUpperCase();
 
         const settings = getDB('ricemill_settings');
-        const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+        const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
         const smsInbox = getDB('ricemill_sms_inbox');
 
         smsInbox.unshift({
@@ -736,7 +736,7 @@ const setupMockApi = () => {
         
         const tokens = getDB('ricemill_tokens');
         const settings = getDB('ricemill_settings');
-        const millName = settings ? settings.mill_name : 'Sri Trimula Rice Mill';
+        const millName = settings ? settings.mill_name : 'Sri Tirumala Rice Mill';
 
         if (settings && settings.holiday_mode) {
           const smsInbox = getDB('ricemill_sms_inbox');

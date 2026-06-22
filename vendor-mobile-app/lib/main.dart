@@ -13,16 +13,16 @@ void main() async {
   // Start background sync listener
   syncService.startPeriodicSync();
 
-  runApp(const SriTrimulaApp());
+  runApp(const SriTirumalaApp());
 }
 
-class SriTrimulaApp extends StatelessWidget {
-  const SriTrimulaApp({super.key});
+class SriTirumalaApp extends StatelessWidget {
+  const SriTirumalaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sri Trimula Rice Mill',
+      title: 'Sri Tirumala Rice Mill',
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFF10B981), // Emerald
@@ -90,7 +90,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sri Trimula Rice Mill',
+              'Sri Tirumala Rice Mill',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Text(

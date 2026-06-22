@@ -189,7 +189,7 @@ export default function PublicDisplay({ backendUrl, language }) {
       {/* Bottom Ticker */}
       <div className="bg-slate-900/40 border border-slate-900 p-4.5 rounded-2xl flex justify-between items-center text-xs text-slate-400 font-medium z-10">
         <span>{t.noInternetTip}</span>
-        <span className="hidden sm:inline font-mono uppercase text-[10px] text-slate-600">Sri Trimula Mill • Telangana</span>
+        <span className="hidden sm:inline font-mono uppercase text-[10px] text-slate-600">Sri Tirumala Mill • Telangana</span>
       </div>
     </div>
   );

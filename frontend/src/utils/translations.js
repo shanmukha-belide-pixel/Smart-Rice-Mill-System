@@ -152,7 +152,7 @@ export const translations = {
     reorderQtySuggest: "ఆటో రి ఆర్డర్ సలహా: 500 కిలోలు",
   },
   en: {
-    appName: "Sri Trimula Rice Mill",
+    appName: "Sri Tirumala Rice Mill",
     workspaceConsole: "Workspace Console",
     tokenBoard: "Token Board",
     inventory: "Inventory",
@@ -239,7 +239,7 @@ export const translations = {
     peakHoursDistribution: "Peak Hours Distribution",
     exportPdf: "Download PDF Report",
     // Public Display
-    todayPrices: "Today's Prices @ Sri Trimula Rice Mill",
+    todayPrices: "Today's Prices @ Sri Tirumala Rice Mill",
     tokenNo: "Token No",
     proceedTo: "Proceed to",
     nextUp: "Next Up",
@@ -271,7 +271,7 @@ export const translations = {
     typeCommand: "Type custom command...",
     // Receipt Modal
     receiptTitle: "Payment Receipt",
-    receiptHeader: "Sri Trimula Rice Mill",
+    receiptHeader: "Sri Tirumala Rice Mill",
     receiptSubHeader: "Hanamkonda, Telangana",
     printReceipt: "Print Receipt",
     close: "Close",

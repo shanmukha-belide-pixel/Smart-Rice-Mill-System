@@ -4,7 +4,7 @@ import { translations } from '../utils/translations';
 
 export default function Settings({ backendUrl, userToken, language }) {
   const [settings, setSettings] = useState({
-    mill_name: 'Sri Trimula Rice Mill',
+    mill_name: 'Sri Tirumala Rice Mill',
     virtual_number: '+917075295440',
     holiday_mode: false,
     queue_hold: false,
@@ -126,7 +126,7 @@ export default function Settings({ backendUrl, userToken, language }) {
         .map(([varName, qty]) => `  ├ ${varName}: ${qty.toFixed(0)} kg`)
         .join('\n') || '  ├ None';
         
-      const smsText = `📊 ${settings.mill_name || 'Sri Trimula Rice Mill'} - Daily Report\nDate: ${dailyData.date}\n----------------------\nTokens Served: ${dailyData.tokens_served}\nNo-Shows: ${dailyData.no_shows} (${dailyData.no_show_rate.toFixed(1)}%)\nTotal Revenue: ₹${dailyData.total_revenue.toLocaleString('en-IN')}\nStock Consumed:\n${stockSplit}`;
+      const smsText = `📊 ${settings.mill_name || 'Sri Tirumala Rice Mill'} - Daily Report\nDate: ${dailyData.date}\n----------------------\nTokens Served: ${dailyData.tokens_served}\nNo-Shows: ${dailyData.no_shows} (${dailyData.no_show_rate.toFixed(1)}%)\nTotal Revenue: ₹${dailyData.total_revenue.toLocaleString('en-IN')}\nStock Consumed:\n${stockSplit}`;
       
       // Trigger simulation via standard SMS send logic
       const formData = new FormData();
@@ -405,7 +405,7 @@ export default function Settings({ backendUrl, userToken, language }) {
             <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
               {language === 'te' 
                 ? 'శ్రీ తిరుమల రైస్ మిల్ సిస్టమ్ ఎస్ఎమ్ఎస్ మరియు మిస్డ్ కాల్ గేట్‌వేలతో అనుసంధానించబడి ఉంది. వర్క్‌ఫ్లో క్రింది విధంగా పనిచేస్తుంది:' 
-                : 'Sri Trimula Rice Mill System is integrated with SMS and Missed Call gateways. The automation workflow operates as follows:'}
+                : 'Sri Tirumala Rice Mill System is integrated with SMS and Missed Call gateways. The automation workflow operates as follows:'}
             </p>
 
             <div className="space-y-3 pt-1">

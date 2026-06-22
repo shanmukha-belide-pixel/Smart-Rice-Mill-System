@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     @staticmethod
-    async def send_otp_email(to_email: str, otp: str, mill_name: str = "Sri Trimula Rice Mill") -> bool:
+    async def send_otp_email(to_email: str, otp: str, mill_name: str = "Sri Tirumala Rice Mill") -> bool:
         """
         Sends an OTP verification email via Gmail SMTP.
         Requires GMAIL_USER and GMAIL_APP_PASS environment variables.
