@@ -23,6 +23,22 @@ from backend.routes.webhooks import router as webhook_router, calculate_estimate
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Run simple migration to ensure tokens table has customer_name column
+def run_migrations():
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    columns = [col['name'] for col in inspector.get_columns('tokens')]
+    if 'customer_name' not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE tokens ADD COLUMN customer_name TEXT"))
+            print("Migration: Added customer_name column to tokens table.")
+
+try:
+    run_migrations()
+except Exception as e:
+    print(f"Migration error: {e}")
+
+
 app = FastAPI(title="Sri Tirumala Rice Mill API", version="1.1.0")  # v1.1.0: Added OTP auth endpoints
 
 # CORS middleware config
