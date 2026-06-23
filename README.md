@@ -24,7 +24,6 @@ Designed to optimize customer throughput, automate rice stock levels, handle bil
 * **Backend:** FastAPI (Python), Uvicorn ASGI Server, SQLAlchemy ORM.
 * **Database:** SQLite (lightweight, zero-config local relational database).
 
----
 
 
    *Open **`http://localhost:5173`** (or your local network IP) to access the console!*
