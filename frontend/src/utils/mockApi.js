@@ -660,17 +660,32 @@ const setupMockApi = () => {
           return makeReply(bodyText.replace('MOCK_SMS_REPORT: ', ''));
         }
 
-        if (cleanCmd === 'TOKEN') {
+        if (cleanCmd.startsWith('TOKEN')) {
           const tokens = getDB('ricemill_tokens');
           const tokenNum = `T-${String(tokens.length + 1).padStart(3, '0')}`;
           const ahead = tokens.filter(t => t.status === 'waiting').length;
           const waitTime = (ahead + 1) * (settings ? settings.avg_service_time : 8);
 
+          // Extract name from Body (e.g. "TOKEN: Shanmukha" or "TOKEN Shanmukha")
+          let customerName = '';
+          const colonIdx = bodyText.indexOf(':');
+          if (colonIdx !== -1) {
+            customerName = bodyText.substring(colonIdx + 1).trim();
+          } else {
+            const spaceIdx = bodyText.indexOf(' ');
+            if (spaceIdx !== -1) {
+              customerName = bodyText.substring(spaceIdx + 1).trim();
+            }
+          }
+          if (!customerName) {
+            customerName = `Customer #${tokens.length + 1}`;
+          }
+
           tokens.push({
             id: tokens.length + 1,
             token_number: tokenNum,
             phone_number: from,
-            customer_name: `Customer #${tokens.length + 1}`,
+            customer_name: customerName,
             status: 'waiting',
             priority: false,
             priority_reason: null,

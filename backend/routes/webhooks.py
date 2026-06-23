@@ -33,7 +33,7 @@ def calculate_estimated_wait_time(db: Session, position: int) -> int:
     avg_service_time = max(3.0, min(20.0, avg_service_time))
     return int(position * avg_service_time)
 
-async def register_customer_token(db: Session, phone_number: str, priority: bool = False, priority_reason: str = None) -> Optional[Token]:
+async def register_customer_token(db: Session, phone_number: str, priority: bool = False, priority_reason: str = None, customer_name: str = None) -> Optional[Token]:
     """
     Core token registration logic.
     Checks if token already exists for the caller today.
@@ -90,6 +90,7 @@ async def register_customer_token(db: Session, phone_number: str, priority: bool
     new_token = Token(
         token_number=token_num,
         phone_number=phone_number,
+        customer_name=customer_name,
         status="waiting",
         priority=priority,
         priority_reason=priority_reason,
@@ -166,8 +167,20 @@ async def handle_incoming_sms(
     start_of_day = datetime.datetime.combine(today, datetime.time.min)
     
     if any(keyword in cmd for keyword in ["TOKEN", "TKN", "HI", "HELLO"]):
+        # Parse customer name from Body (e.g. "TOKEN: Shanmukha" or "TOKEN Shanmukha")
+        name = None
+        if ":" in Body:
+            parts = Body.split(":", 1)
+            name = parts[1].strip()
+        else:
+            for kw in ["TOKEN", "TKN", "HI", "HELLO"]:
+                if Body.upper().startswith(kw):
+                    remainder = Body[len(kw):].strip()
+                    if remainder:
+                        name = remainder
+                        break
         # Register a new token
-        token = await register_customer_token(db, phone)
+        token = await register_customer_token(db, phone, customer_name=name)
         if token is None:
             return Response(content="Closed today", media_type="text/plain")
         # Note: register_customer_token sends its own SMS, so we return empty/generic response or specific body

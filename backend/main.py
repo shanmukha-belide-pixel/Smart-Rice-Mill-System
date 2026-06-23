@@ -523,7 +523,7 @@ async def create_token(schema: UserCreate, db: Session = Depends(get_db)):
     # Mock endpoint for admin token creation
     # For actual client requests, webhooks or customer portal calls register_customer_token
     from backend.routes.webhooks import register_customer_token
-    token = await register_customer_token(db, schema.username, False) # Using username as phone mapping
+    token = await register_customer_token(db, schema.username, False, customer_name=schema.full_name) # Using username as phone mapping
     await broadcast_queue_update()
     return token
 

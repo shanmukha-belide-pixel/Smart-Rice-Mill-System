@@ -4,6 +4,7 @@ import { translations } from '../utils/translations';
 
 export default function CustomerPortal({ backendUrl, language }) {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -70,7 +71,9 @@ export default function CustomerPortal({ backendUrl, language }) {
     try {
       const formData = new FormData();
       formData.append('From', fullPhone);
-      formData.append('Body', 'TOKEN');
+      
+      const bodyText = customerName.trim() ? `TOKEN: ${customerName.trim()}` : 'TOKEN';
+      formData.append('Body', bodyText);
 
       const res = await fetch(`${backendUrl}/api/webhooks/sms`, {
         method: 'POST',
@@ -207,6 +210,7 @@ export default function CustomerPortal({ backendUrl, language }) {
                     onClick={() => {
                       setIsVerified(false);
                       setTokenInfo(null);
+                      setCustomerName('');
                     }}
                     className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 hover:text-slate-200 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
                   >
@@ -229,6 +233,19 @@ export default function CustomerPortal({ backendUrl, language }) {
                   </p>
                 </div>
 
+                <div className="space-y-2 text-left max-w-xs mx-auto pb-2">
+                  <label className="block text-[11px] font-semibold text-slate-400">
+                    {language === 'te' ? 'కస్టమర్ పేరు (ఐచ్ఛికం)' : 'Customer Name (Optional)'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={language === 'te' ? 'ఉదా: రాము' : 'Enter name (e.g. Ramu)'}
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                </div>
+
                 {errorMsg && (
                   <div className="bg-rose-955/40 border border-rose-900/20 text-rose-455 p-3 rounded-xl text-xs text-center font-medium">
                     {errorMsg}
@@ -240,8 +257,9 @@ export default function CustomerPortal({ backendUrl, language }) {
                     onClick={() => {
                       setIsVerified(false);
                       setTokenInfo(null);
+                      setCustomerName('');
                     }}
-                    className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-350 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 cursor-pointer uppercase tracking-wider"
+                    className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-355 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 cursor-pointer uppercase tracking-wider"
                   >
                     {language === 'te' ? 'లాగ్ అవుట్' : 'Sign Out'}
                   </button>
