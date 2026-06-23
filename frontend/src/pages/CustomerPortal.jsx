@@ -131,6 +131,19 @@ export default function CustomerPortal({ backendUrl, language }) {
             )}
 
             <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-400">
+                {language === 'te' ? 'మీ పేరు' : 'Your Name'}
+              </label>
+              <input
+                type="text"
+                placeholder={language === 'te' ? 'ఉదా: రామయ్య' : 'e.g. Ramaiah'}
+                className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-400">{t.enterMobile}</label>
               <div className="relative">
                 <span className="absolute left-4 top-3.5 text-xs text-slate-500 font-mono">+91</span>
@@ -152,7 +165,12 @@ export default function CustomerPortal({ backendUrl, language }) {
             {tokenInfo ? (
               /* Live Ticket view */
               <div className="space-y-5 text-center">
-                <div className="space-y-2">
+              <div className="space-y-2">
+                  {(tokenInfo.customer_name || customerName) && (
+                    <p className="text-[11px] text-amber-400 font-bold tracking-wide">
+                      👋 {language === 'te' ? 'నమస్కారం,' : 'Hello,'} {tokenInfo.customer_name || customerName}
+                    </p>
+                  )}
                   <span className="text-[10px] text-slate-500 uppercase tracking-widest font-extrabold font-mono">{t.yourActiveTicket}</span>
                   <div className="text-5xl font-black text-slate-200 font-mono bg-slate-950 py-5 border border-slate-850 rounded-2xl tracking-wide select-none shadow-inner">
                     {tokenInfo.token_number}
