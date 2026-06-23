@@ -14,8 +14,7 @@ Designed to optimize customer throughput, automate rice stock levels, handle bil
 4. **📸 simulated Receipt Scanner:** Integrates an overlay scanner layout mimicking camera scanning of customer payment receipts.
 5. **🖨️ Printable Thermal Receipts:** Displays a paper-like payment ticket upon checkout with standard **80mm media styling** for thermal receipt printers.
 6. **📈 Financial Reports & Analytics:** Features daily metrics (total revenue, tokens served, no-show rate) and a weekly revenue trend **Bar Chart** driven by real database sales.
-7. **📱 Interactive SMS & Call Simulator:** Emulates feature-phone missed calls and SMS commands (`TOKEN`, `PRICE`, `STATUS`, `STOP`) for offline registrations.
-8. **📦 Offline-Capable Flutter App:** Dart/Flutter companion code in `/vendor-mobile-app` for operators on the go.
+7. **📦 Offline-Capable Flutter App:** Dart/Flutter companion code in `/vendor-mobile-app` for operators on the go.
 
 ---
 
@@ -74,14 +73,4 @@ Navigate to the `/frontend` directory:
 
 ---
 
----
 
-## 📋 Offline SMS Commands (Simulator)
-
-Test these inputs directly in the simulated console screen:
-* `TOKEN` - Register a fresh queue spot (responds with estimated wait time and token number).
-* `PRICE` - List today's rice variety rates per kg.
-* `STATUS` - Track queue position and estimate wait times.
-* `STOP` - Cancel your active ticket and opt-out of alerts.
-
----
