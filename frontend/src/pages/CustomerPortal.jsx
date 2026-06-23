@@ -3,8 +3,8 @@ import { Phone, Mail, Users, Clock, ArrowRight, UserCheck, RefreshCw, Key } from
 import { translations } from '../utils/translations';
 
 export default function CustomerPortal({ backendUrl, language }) {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [customerName, setCustomerName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(() => localStorage.getItem('cp_phone') || '');
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem('cp_name') || '');
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,11 +13,12 @@ export default function CustomerPortal({ backendUrl, language }) {
   const t = translations[language || 'te'];
 
   // Fetch token status for the logged-in phone number
-  const checkStatus = async () => {
-    if (!phoneNumber) return;
+  const checkStatus = async (overridePhone) => {
+    const phone = overridePhone || phoneNumber;
+    if (!phone) return;
     setLoading(true);
     setErrorMsg('');
-    const fullPhone = '+91' + phoneNumber;
+    const fullPhone = '+91' + phone;
     try {
       // Query backend for active token details
       const tokenRes = await fetch(`${backendUrl}/api/tokens`);
@@ -42,7 +43,7 @@ export default function CustomerPortal({ backendUrl, language }) {
     }
   };
 
-  // Access portal directly using phone number
+  // Access portal: save to localStorage for persistence across reloads
   const handleAccessPortal = async (e) => {
     if (e) e.preventDefault();
     if (!phoneNumber || phoneNumber.length !== 10) {
@@ -52,8 +53,10 @@ export default function CustomerPortal({ backendUrl, language }) {
     setLoading(true);
     setErrorMsg('');
     try {
+      localStorage.setItem('cp_phone', phoneNumber);
+      localStorage.setItem('cp_name', customerName.trim());
       setIsVerified(true);
-      await checkStatus();
+      await checkStatus(phoneNumber);
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
     } finally {
@@ -81,7 +84,7 @@ export default function CustomerPortal({ backendUrl, language }) {
       });
 
       if (res.ok) {
-        setTimeout(checkStatus, 1100);
+        setTimeout(() => checkStatus(phoneNumber), 1100);
       } else {
         setErrorMsg(language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.');
       }
@@ -92,12 +95,19 @@ export default function CustomerPortal({ backendUrl, language }) {
     }
   };
 
-  // Auto-refresh when logged in & verified
+  // On mount: if phone saved in localStorage, auto-restore session
   useEffect(() => {
-    let interval;
-    if (isVerified) {
-      interval = setInterval(checkStatus, 15000);
+    const savedPhone = localStorage.getItem('cp_phone');
+    if (savedPhone && savedPhone.length === 10) {
+      setIsVerified(true);
+      checkStatus(savedPhone);
     }
+  }, []);
+
+  // Auto-refresh token status every 15s when logged in
+  useEffect(() => {
+    if (!isVerified || !phoneNumber) return;
+    const interval = setInterval(() => checkStatus(phoneNumber), 15000);
     return () => clearInterval(interval);
   }, [isVerified, phoneNumber]);
 
@@ -228,7 +238,10 @@ export default function CustomerPortal({ backendUrl, language }) {
                     onClick={() => {
                       setIsVerified(false);
                       setTokenInfo(null);
+                      setPhoneNumber('');
                       setCustomerName('');
+                      localStorage.removeItem('cp_phone');
+                      localStorage.removeItem('cp_name');
                     }}
                     className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 hover:text-slate-200 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
                   >
@@ -275,7 +288,10 @@ export default function CustomerPortal({ backendUrl, language }) {
                     onClick={() => {
                       setIsVerified(false);
                       setTokenInfo(null);
+                      setPhoneNumber('');
                       setCustomerName('');
+                      localStorage.removeItem('cp_phone');
+                      localStorage.removeItem('cp_name');
                     }}
                     className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-355 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 cursor-pointer uppercase tracking-wider"
                   >
