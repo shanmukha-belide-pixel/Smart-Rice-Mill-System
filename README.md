@@ -10,11 +10,10 @@ Designed to optimize customer throughput, automate rice stock levels, handle bil
 
 1. **⚡ Real-Time Token Board:** Manage live counter allocations, FIFO customer queue flows, and immediate screen announcements.
 2. **🗣️ Bilingual UI (Telugu Default):** Defaults entirely to Telugu (`te`) to cater to local operators and customers, with a one-click globe switch to English (`en`).
-3. **📊 Dynamic UPI Payments:** Generates exact-value merchant UPI payment QR codes (`PA: 7075295440@ybl` - *Belide Shanmukha Srinivas*) for seamless digital checkouts.
-4. **📸 simulated Receipt Scanner:** Integrates an overlay scanner layout mimicking camera scanning of customer payment receipts.
-5. **🖨️ Printable Thermal Receipts:** Displays a paper-like payment ticket upon checkout with standard **80mm media styling** for thermal receipt printers.
-6. **📈 Financial Reports & Analytics:** Features daily metrics (total revenue, tokens served, no-show rate) and a weekly revenue trend **Bar Chart** driven by real database sales.
-7. **📦 Offline-Capable Flutter App:** Dart/Flutter companion code in `/vendor-mobile-app` for operators on the go.
+3. **📸 simulated Receipt Scanner:** Integrates an overlay scanner layout mimicking camera scanning of customer payment receipts.
+4. **🖨️ Printable Thermal Receipts:** Displays a paper-like payment ticket upon checkout with standard **80mm media styling** for thermal receipt printers.
+5. **📈 Financial Reports & Analytics:** Features daily metrics (total revenue, tokens served, no-show rate) and a weekly revenue trend **Bar Chart** driven by real database sales.
+6. **📦 Offline-Capable Flutter App:** Dart/Flutter companion code in `/vendor-mobile-app` for operators on the go.
 
 ---
 
