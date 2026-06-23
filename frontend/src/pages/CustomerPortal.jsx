@@ -7,6 +7,7 @@ export default function CustomerPortal({ backendUrl, language }) {
   const [customerName, setCustomerName] = useState(() => localStorage.getItem('cp_name') || '');
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
+  const [queueInfo, setQueueInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -95,6 +96,29 @@ export default function CustomerPortal({ backendUrl, language }) {
     }
   };
 
+  // Fetch live queue stats to show on registration screen
+  const fetchQueueInfo = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/tokens`);
+      if (res.ok) {
+        const allTokens = await res.json();
+        const waiting = allTokens.filter(t => t.status === 'waiting');
+        const active = allTokens.filter(t => t.status === 'active');
+        const maxToken = allTokens.length > 0
+          ? Math.max(...allTokens.map(t => t.token_number || 0))
+          : 0;
+        setQueueInfo({
+          waitingCount: waiting.length,
+          activeCount: active.length,
+          nextToken: maxToken + 1,
+          estimatedWait: waiting.length * 5,
+        });
+      }
+    } catch (err) {
+      // silent fail
+    }
+  };
+
   // On mount: if phone saved in localStorage, auto-restore session
   useEffect(() => {
     const savedPhone = localStorage.getItem('cp_phone');
@@ -102,6 +126,7 @@ export default function CustomerPortal({ backendUrl, language }) {
       setIsVerified(true);
       checkStatus(savedPhone);
     }
+    fetchQueueInfo();
   }, []);
 
   // Auto-refresh token status every 15s when logged in
@@ -110,6 +135,14 @@ export default function CustomerPortal({ backendUrl, language }) {
     const interval = setInterval(() => checkStatus(phoneNumber), 15000);
     return () => clearInterval(interval);
   }, [isVerified, phoneNumber]);
+
+  // Refresh queue info every 20s when on registration screen
+  useEffect(() => {
+    if (!isVerified || tokenInfo) return;
+    fetchQueueInfo();
+    const interval = setInterval(fetchQueueInfo, 20000);
+    return () => clearInterval(interval);
+  }, [isVerified, tokenInfo]);
 
   return (
     <div className="max-w-md mx-auto min-h-[500px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
@@ -251,18 +284,46 @@ export default function CustomerPortal({ backendUrl, language }) {
               </div>
             ) : (
               /* No token exists yet - offer direct registration */
-              <div className="space-y-6 text-center">
-                <div className="space-y-3 py-6">
-                  <UserCheck className="w-12 h-12 text-emerald-400 mx-auto stroke-1" />
-                  <h3 className="text-lg font-bold text-slate-200">
-                    {language === 'te' ? 'ధృవీకరణ పూర్తయింది ✓' : 'Verification Complete ✓'}
+              <div className="space-y-5 text-center">
+                <div className="space-y-2 pt-2">
+                  <UserCheck className="w-10 h-10 text-emerald-400 mx-auto stroke-1" />
+                  <h3 className="text-base font-bold text-slate-200">
+                    {language === 'te' ? 'ధృవీకరణ పూర్తయింది ✓' : 'Verified ✓'}
                   </h3>
-                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
                     {language === 'te'
-                      ? 'ఈ రోజు మీ నంబర్‌కు ఎలాంటి సక్రియ టోకెన్ లేదు. క్యూలో చేరడానికి క్రింది బటన్ నొక్కండి.'
-                      : 'You do not have an active token for today. Click below to secure a token in the queue.'}
+                      ? 'ఈ రోజు మీ నంబర్‌కు ఎలాంటి సక్రియ టోకెన్ లేదు.'
+                      : 'No active token for your number today.'}
                   </p>
                 </div>
+
+                {/* Live Queue Status */}
+                {queueInfo && (
+                  <div className="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4 space-y-3">
+                    <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">
+                      {language === 'te' ? '📊 ప్రస్తుత క్యూ స్థితి' : '📊 Live Queue Status'}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
+                        <div className="text-xl font-black text-amber-400 font-mono">{queueInfo.waitingCount}</div>
+                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'వేచి ఉన్నారు' : 'Waiting'}</div>
+                      </div>
+                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
+                        <div className="text-xl font-black text-emerald-400 font-mono">#{queueInfo.nextToken}</div>
+                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'మీ టోకెన్' : 'Your Token'}</div>
+                      </div>
+                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
+                        <div className="text-xl font-black text-slate-300 font-mono">~{queueInfo.estimatedWait}m</div>
+                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'అంచనా వేచి' : 'Est. Wait'}</div>
+                      </div>
+                    </div>
+                    {queueInfo.waitingCount === 0 && (
+                      <p className="text-[10px] text-emerald-400 font-bold">
+                        🟢 {language === 'te' ? 'క్యూ ఖాళీగా ఉంది! వెంటనే టోకెన్ పొందండి.' : 'Queue is empty! Get your token instantly.'}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2 text-left max-w-xs mx-auto pb-2">
                   <label className="block text-[11px] font-semibold text-slate-400">
