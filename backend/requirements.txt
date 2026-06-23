@@ -6,3 +6,4 @@ pyjwt
 requests
 websockets
 python-multipart
+python-dotenv

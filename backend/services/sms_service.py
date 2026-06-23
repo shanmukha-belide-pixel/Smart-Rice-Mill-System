@@ -37,12 +37,13 @@ class SMSService:
         # 2. Production Exotel configuration
         exotel_sid = os.getenv("EXOTEL_ACCOUNT_SID")
         exotel_token = os.getenv("EXOTEL_API_TOKEN")
-        exotel_subdomain = os.getenv("EXOTEL_SUBDOMAIN", "api.exotel.com") # e.g. api.exotel.com or api.exotel.in
-        exotel_sender = os.getenv("EXOTEL_SENDER_ID") # Approved DLT Sender ID
+        exotel_subdomain = os.getenv("EXOTEL_SUBDOMAIN", "api.in.exotel.com")
+        exotel_sender = os.getenv("EXOTEL_SENDER_ID")
         
         if exotel_sid and exotel_token and exotel_sender:
             try:
                 url = f"https://{exotel_subdomain}/v1/Accounts/{exotel_sid}/Sms/send.json"
+                logger.info(f"[Exotel] Sending to {phone_number} via {url}")
                 response = requests.post(
                     url,
                     auth=(exotel_sid, exotel_token),
@@ -51,16 +52,18 @@ class SMSService:
                         "To": phone_number,
                         "Body": message
                     },
-                    timeout=5
+                    timeout=10
                 )
-                if response.status_code == 200:
-                    logger.info("Exotel SMS sent successfully.")
+                logger.info(f"[Exotel] Response {response.status_code}: {response.text[:300]}")
+                if response.status_code in [200, 201]:
+                    logger.info("[Exotel] SMS sent successfully.")
                     simulated_msg["provider"] = "EXOTEL"
                     return True
                 else:
-                    logger.error(f"Exotel SMS failed: {response.text}")
+                    logger.error(f"[Exotel] SMS failed ({response.status_code}): {response.text}")
             except Exception as e:
-                logger.error(f"Exotel SMS error: {str(e)}")
+                logger.error(f"[Exotel] SMS error: {str(e)}")
+
 
         # 3. Twilio Fallback
         twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")

@@ -4,6 +4,7 @@ import jwt
 import asyncio
 import csv
 import io
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -11,6 +12,9 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Dict, Set
+
+# Load environment variables from backend/.env
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 from backend.database import engine, Base, get_db
 from backend.models import User, Token, Stock, Sale, PriceHistory, SystemSetting

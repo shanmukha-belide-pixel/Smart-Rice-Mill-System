@@ -732,7 +732,7 @@ const setupMockApi = () => {
 
       if (path === '/api/webhooks/missed-call') {
         const params = new URLSearchParams(await init.body);
-        const from = params.get('From') || '+910000000000';
+        const from = params.get('From') || params.get('CallFrom') || '+910000000000';
         
         const tokens = getDB('ricemill_tokens');
         const settings = getDB('ricemill_settings');

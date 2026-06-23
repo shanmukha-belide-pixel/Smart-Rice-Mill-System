@@ -4,7 +4,6 @@ import StockManagement from './pages/StockManagement';
 import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
-import SmsSimulator from './components/SmsSimulator';
 import SettingsPage from './pages/Settings';
 import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings } from 'lucide-react';
 import { translations } from './utils/translations';
@@ -30,12 +29,8 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Login 2FA OTP step
-  const [otpStep, setOtpStep] = useState(false); // true = show OTP input after password
-  const [loginOtp, setLoginOtp] = useState('');
-  const [otpUsername, setOtpUsername] = useState('');
-  const [otpHint, setOtpHint] = useState('');
-  
+
+
   const [toasts, setToasts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -195,15 +190,7 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // 2FA required — show OTP step
-        if (data.otp_required) {
-          setOtpStep(true);
-          setOtpUsername(data.username);
-          setOtpHint(data.message || 'OTP sent to your registered phone number.');
-          setLoading(false);
-          return;
-        }
-        // Direct login (no 2FA configured)
+        // Direct login
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
@@ -220,45 +207,6 @@ export default function App() {
       }
     } catch (err) {
       setLoginError('Could not connect to backend server. Make sure API is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyLoginOtp = async (e) => {
-    e.preventDefault();
-    if (!loginOtp || loginOtp.length !== 6) {
-      setLoginError(language === 'te' ? 'దయచేసి 6 అంకెల OTP నమోదు చేయండి.' : 'Please enter the 6-digit OTP.');
-      return;
-    }
-    setLoading(true);
-    setLoginError('');
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/verify-login-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: otpUsername, otp: loginOtp }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setToken(data.access_token);
-        setRole(data.role);
-        setFullName(data.full_name);
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('name', data.full_name);
-        setOtpStep(false);
-        setLoginOtp('');
-        const tab2 = data.role === 'accountant' ? 'reports' : 'dashboard';
-        setCurrentTab(tab2);
-        localStorage.setItem('currentTab', tab2);
-        setupSessionTimeout();
-      } else {
-        const err = await res.json();
-        setLoginError(err.detail || 'Invalid OTP.');
-      }
-    } catch (err) {
-      setLoginError('Could not connect to server.');
     } finally {
       setLoading(false);
     }
@@ -627,78 +575,41 @@ export default function App() {
                 </div>
               )}
 
-              {/* Step 1: Username + Password */}
-              {!otpStep && (
-                <>
-                  <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                    {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
-                  </h2>
-                  <form onSubmit={handleLogin} className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400">
-                        {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
-                      </label>
-                      <input
-                        type="text" required
-                        placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-medium"
-                        value={loginForm.username}
-                        onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400">
-                        {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
-                      </label>
-                      <input
-                        type="password" required placeholder="••••••••"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                      />
-                    </div>
-                    <button type="submit" disabled={loading}
-                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
-                      {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              {/* Step 2: Login OTP (2FA) */}
-              {otpStep && (
-                <>
-                  <div className="text-center space-y-1">
-                    <div className="text-2xl">🔐</div>
-                    <h2 className="text-sm font-bold text-amber-400">
-                      {language === 'te' ? 'రెండు-అంచెల ధృవీకరణ' : 'Two-Factor Verification'}
-                    </h2>
-                    <p className="text-xs text-slate-400">{otpHint}</p>
+              {/* Login form */}
+              <>
+                <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
+                </h2>
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-400">
+                      {language === 'te' ? 'యూజర్‌నేమ్' : 'Username'}
+                    </label>
+                    <input
+                      type="text" required
+                      placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-medium"
+                      value={loginForm.username}
+                      onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                    />
                   </div>
-                  <form onSubmit={handleVerifyLoginOtp} className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-400">
-                        {language === 'te' ? '6-అంకెల OTP కోడ్' : '6-Digit OTP Code'}
-                      </label>
-                      <input
-                        type="text" maxLength={6} required autoFocus
-                        placeholder="• • • • • •"
-                        className="w-full bg-slate-950 border border-amber-700/50 rounded-xl px-4 py-3 text-xl text-center tracking-[0.5em] focus:outline-none focus:ring-1 focus:ring-amber-500 text-amber-300 placeholder:text-slate-600 transition-all font-mono"
-                        value={loginOtp}
-                        onChange={(e) => setLoginOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      />
-                    </div>
-                    <button type="submit" disabled={loading}
-                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 cursor-pointer">
-                      {loading ? 'Verifying...' : (language === 'te' ? 'OTP ధృవీకరించు' : 'Verify OTP')}
-                    </button>
-                    <button type="button" onClick={() => { setOtpStep(false); setLoginOtp(''); setLoginError(''); }}
-                      className="w-full text-slate-500 hover:text-slate-300 text-xs py-2 transition-colors cursor-pointer">
-                      ← {language === 'te' ? 'వెనుకకు వెళ్ళు' : 'Back to login'}
-                    </button>
-                  </form>
-                  </>
-              )}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-400">
+                      {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
+                    </label>
+                    <input
+                      type="password" required placeholder="••••••••"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
+                      value={loginForm.password}
+                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    />
+                  </div>
+                  <button type="submit" disabled={loading}
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
+                    {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
+                  </button>
+                </form>
+              </>
 
             </div>
 
@@ -750,17 +661,17 @@ export default function App() {
               </h3>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
                 {language === 'te'
-                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, చెల్లింపులు మరియు ఆటోమేటెడ్ నోటిఫికేషన్‌లను ఒకే చోట నిర్వహించండి.'
-                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and automated customer communication seamlessly.'}
+                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే చోట నిర్వహించండి.'
+                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and billing transactions seamlessly.'}
               </p>
               
               {/* Feature Tags */}
               <div className="flex flex-wrap justify-center gap-2 pt-2">
                 <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
-                  ⚡ {language === 'te' ? 'ఆటోమేటిక్ SMS' : 'Automated SMS'}
+                  📋 {language === 'te' ? 'క్యూ మేనేజ్‌మెంట్' : 'Queue Management'}
                 </span>
                 <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
-                  📞 {language === 'te' ? 'మిస్డ్ కాల్ టోకెన్' : 'Missed Call Tokens'}
+                  📦 {language === 'te' ? 'ఇన్వెంటరీ నిల్వలు' : 'Inventory Tracking'}
                 </span>
                 <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
                   📊 {language === 'te' ? 'రియల్ టైమ్ డాష్‌బోర్డ్' : 'Real-time Analytics'}
@@ -999,14 +910,6 @@ export default function App() {
           {currentTab === 'settings' && canAccessTab('settings') && (
             <SettingsPage backendUrl={BACKEND_URL} userToken={token} language={language} />
           )}
-        </div>
-
-        {/* Right Side: Interactive SMS/Call Simulator (Docked) */}
-        <div className="w-full lg:w-80 shrink-0">
-          <SmsSimulator backendUrl={BACKEND_URL} language={language} onActionTriggered={() => {
-            // Force refresh when action triggered in simulator
-            console.log('Action refreshed.');
-          }} />
         </div>
 
       </main>

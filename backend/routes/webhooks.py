@@ -1,5 +1,5 @@
 import datetime
-from fastapi import APIRouter, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Token, Stock, Sale, SystemSetting
@@ -110,17 +110,33 @@ async def register_customer_token(db: Session, phone_number: str, priority: bool
     
     return new_token
 
+def resolve_caller_phone(from_number: Optional[str], call_from: Optional[str]) -> str:
+    """Exotel Passthru sends CallFrom; Twilio sends From."""
+    phone = (call_from or from_number or "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Missing caller phone (From or CallFrom)")
+    return phone
+
 @router.post("/missed-call")
-async def handle_missed_call(
-    From: str = Form(...),
-    db: Session = Depends(get_db)
-):
+@router.get("/missed-call")
+async def handle_missed_call(request: Request, db: Session = Depends(get_db)):
     """
     Webhook for missed calls (Exotel/Twilio).
+    Exotel Passthru sends CallFrom (POST or GET); Twilio sends From.
     Creates token for the caller, sends SMS, and returns Hangup XML.
     """
-    # Clean phone number (standard format)
-    phone = From.strip()
+    if request.method == "POST":
+        form = await request.form()
+        from_number = form.get("From")
+        call_from = form.get("CallFrom")
+    else:
+        from_number = request.query_params.get("From")
+        call_from = request.query_params.get("CallFrom")
+
+    phone = resolve_caller_phone(
+        str(from_number) if from_number else None,
+        str(call_from) if call_from else None,
+    )
     
     # Register token
     await register_customer_token(db, phone)
