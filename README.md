@@ -26,7 +26,7 @@ Designed to optimize customer throughput, automate rice stock levels, handle bil
 
 
 
-   *Open **`http://localhost:5173`** (or your local network IP) to access the console!*
+  
 
 ---
 
