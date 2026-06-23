@@ -1,6 +1,6 @@
 # 🌾 Sri Tirumala Rice Mill App
 
-A modern, high-performance Queue & Inventory Management system custom-tailored for **Sri Tirumala Rice Mill** (Hanamkonda, Telangana). 
+A modern, high-performance Queue & Inventory Management system custom-tailored for **Sri Tirumala Rice Mill**  
 
 Designed to optimize customer throughput, automate rice stock levels, handle bilingual operations, and generate instant printable receipts.
 
@@ -26,49 +26,7 @@ Designed to optimize customer throughput, automate rice stock levels, handle bil
 
 ---
 
-## 🚀 Setup & Installation
 
-### Prerequisites
-* Python 3.10+
-* Node.js (v18+) & NPM
-
----
-
-### 1️⃣ Run Backend API
-Navigate to the root workspace and follow these steps:
-
-1. Create a Python virtual environment and activate it:
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On Mac/Linux:
-   source venv/bin/activate
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r backend/requirements.txt
-   ```
-3. Start the FastAPI uvicorn server:
-   ```bash
-   python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-   *The backend will now be live on `http://127.0.0.1:8000` (and `http://localhost:8000`).*
-
----
-
-### 2️⃣ Run Frontend Web Console
-Navigate to the `/frontend` directory:
-
-1. Install npm dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Launch Vite development server:
-   ```bash
-   npm run dev -- --host
-   ```
    *Open **`http://localhost:5173`** (or your local network IP) to access the console!*
 
 ---
