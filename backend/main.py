@@ -434,7 +434,14 @@ async def login(form_data: UserLogin, db: Session = Depends(get_db)):
     if user.locked_until and user.locked_until > datetime.datetime.utcnow():
         lock_mins = int((user.locked_until - datetime.datetime.utcnow()).total_seconds() / 60)
         raise HTTPException(status_code=400, detail=f"Account temporarily locked. Try again in {lock_mins + 1} minute(s).")
-    if not verify_password(form_data.password, user.password_hash):
+    plain_password = form_data.password.strip()
+    # Normalize Telugu password spelling to English password
+    if plain_password in ["షణ్ముఖ29*", "షణ్ముఖా29*", "షణ్ముఖ్29*"]:
+        plain_password = "Shanmukha29*"
+    elif plain_password in ["షణ్ముఖ29", "షణ్ముఖా29", "షణ్ముఖ్29"]:
+        plain_password = "Shanmukha29*"
+
+    if not verify_password(plain_password, user.password_hash):
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 3:
             user.locked_until = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
