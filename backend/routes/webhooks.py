@@ -6,6 +6,11 @@ from backend.models import Token, Stock, Sale, SystemSetting
 from backend.services.sms_service import SMSService
 from typing import Optional
 
+try:
+    from backend.services.cloud_sync import trigger_backup
+except ImportError:
+    from services.cloud_sync import trigger_backup
+
 router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
 
 def get_next_token_number(db: Session) -> str:
@@ -108,6 +113,9 @@ async def register_customer_token(db: Session, phone_number: str, priority: bool
     # Live broadcast to all active dashboards
     from backend.main_shared import broadcast_queue_update
     await broadcast_queue_update()
+    
+    # Trigger cloud backup
+    trigger_backup()
     
     return new_token
 
@@ -240,6 +248,7 @@ async def handle_incoming_sms(
         for t in tokens:
             t.status = "expired"
         db.commit()
+        trigger_backup()
         
         settings = db.query(SystemSetting).first()
         mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"

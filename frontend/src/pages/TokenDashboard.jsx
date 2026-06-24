@@ -90,12 +90,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       }
     } else if (swipeOffsetX > 75) {
       // Swipe right: open serve checkout modal
-      setServingToken(token);
-      setSaleForm(prev => ({
-        ...prev,
-        variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : ''
-      }));
-      setShowServeModal(true);
+      openServeModal(token);
     }
     
     setSwipeTokenId(null);
@@ -286,7 +281,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
       quantity_kg: '',
       bags: '',
       payment_mode: 'Cash',
-      customer_name: ''
+      customer_name: token.customer_name || ''
     });
     setShowServeModal(true);
   };
@@ -712,7 +707,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                           )}
                         </div>
                         <div className="hidden sm:block">
-                          <span className="text-[11px] text-slate-505 font-mono">{token.phone_number}</span>
+                          <span className="text-[11px] text-slate-500 font-mono">{token.phone_number}</span>
                         </div>
                       </div>
                       
@@ -720,14 +715,7 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
                         <span className="text-[11px] text-slate-400 font-semibold font-mono">~{token.wait_time_minutes} {t.mins}</span>
                         {index === 0 && (
                           <button
-                            onClick={() => {
-                              setServingToken(token);
-                              setSaleForm(prev => ({
-                                ...prev,
-                                variety_name: stockVarieties.length > 0 ? stockVarieties[0].variety_name : ''
-                              }));
-                              setShowServeModal(true);
-                            }}
+                            onClick={() => openServeModal(token)}
                             disabled={isHold}
                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 px-4 h-11 min-w-[55px] flex items-center justify-center rounded-xl text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
                           >

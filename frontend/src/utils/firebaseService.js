@@ -64,6 +64,46 @@ const triggerWebsocketRefresh = () => {
   }
 };
 
+const generateInitialMockSales = () => {
+  const sales = [];
+  const varieties = [
+    { name: 'Basmati', price: 120 },
+    { name: 'Sona Masuri', price: 55 },
+    { name: 'Sharbati', price: 75 }
+  ];
+  const paymentModes = ['Cash', 'UPI', 'Card'];
+  const today = new Date();
+  let id = 1;
+
+  // Generate sales for the last 7 days (including today)
+  for (let i = 6; i >= 0; i--) {
+    const targetDate = new Date();
+    targetDate.setDate(today.getDate() - i);
+    
+    // Seed 2 to 4 sales per day
+    const numSales = i === 0 ? 3 : Math.floor(Math.random() * 3) + 2; 
+    for (let j = 0; j < numSales; j++) {
+      const saleDate = new Date(targetDate);
+      saleDate.setHours(9 + j * 2 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60));
+      
+      const variety = varieties[Math.floor(Math.random() * varieties.length)];
+      const weight = Math.floor(Math.random() * 150) + 50; // 50 to 200 kg
+      const totalPrice = weight * variety.price;
+      
+      sales.push({
+        id: id++,
+        token_id: null,
+        variety_name: variety.name,
+        quantity_kg: weight,
+        total_price: totalPrice,
+        payment_mode: paymentModes[Math.floor(Math.random() * paymentModes.length)],
+        created_at: saleDate.toISOString()
+      });
+    }
+  }
+  return sales;
+};
+
 // Local cache database state (matches database schema)
 const getInitialState = () => ({
   settings: {
@@ -81,7 +121,7 @@ const getInitialState = () => ({
     { id: 3, variety_name: 'Sharbati', quantity_kg: 300, price_per_kg: 75, low_stock_threshold: 50 }
   ],
   tokens: [],
-  sales: [],
+  sales: generateInitialMockSales(),
   price_history: [],
   sms_inbox: [],
   logs: [],

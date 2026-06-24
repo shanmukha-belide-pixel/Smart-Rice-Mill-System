@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Phone, Mail, Users, Clock, ArrowRight, UserCheck, RefreshCw, Key } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Phone, Mail, Users, Clock, ArrowRight, UserCheck, RefreshCw, Key, Volume2, VolumeX } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function CustomerPortal({ backendUrl, language }) {
@@ -8,10 +8,87 @@ export default function CustomerPortal({ backendUrl, language }) {
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
   const [queueInfo, setQueueInfo] = useState(null);
+  const [justRegistered, setJustRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [initialChecked, setInitialChecked] = useState(false);
+
+  // Audio/voice announcement states
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('cp_sound') !== 'false'; // default to true
+  });
+  const prevTokenStateRef = useRef({ id: null, status: null });
 
   const t = translations[language || 'te'];
+
+  // Check speech synthesis support on mount
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      setIsSpeechSupported(true);
+    }
+  }, []);
+
+  // Speak announcement in Telugu with English fallback
+  const announceText = (textTe, textEn) => {
+    if (!isSpeechSupported || !soundEnabled) return;
+    
+    // Stop any active speech
+    window.speechSynthesis.cancel();
+    
+    const utteranceTe = new SpeechSynthesisUtterance(textTe);
+    utteranceTe.lang = 'te-IN';
+    utteranceTe.rate = 0.8;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const teluguVoice = voices.find(v => v.lang.includes('te'));
+    
+    if (teluguVoice) {
+      utteranceTe.voice = teluguVoice;
+      window.speechSynthesis.speak(utteranceTe);
+    } else {
+      // Fallback to English
+      const utteranceEn = new SpeechSynthesisUtterance(textEn);
+      utteranceEn.lang = 'en-IN';
+      utteranceEn.rate = 0.85;
+      const englishVoice = voices.find(v => v.lang.includes('en'));
+      if (englishVoice) utteranceEn.voice = englishVoice;
+      window.speechSynthesis.speak(utteranceEn);
+    }
+  };
+
+  // Monitor token state changes to play voice notifications
+  useEffect(() => {
+    if (!tokenInfo) {
+      prevTokenStateRef.current = { id: null, status: null };
+      return;
+    }
+    
+    const prev = prevTokenStateRef.current;
+    
+    // Case 1: Newly registered or loaded token
+    if (prev.id !== tokenInfo.id) {
+      prevTokenStateRef.current = { id: tokenInfo.id, status: tokenInfo.status };
+      
+      const cleanTokenNum = tokenInfo.token_number.replace('-', ' ');
+      const textTe = `మీ టోకెన్ విజయవంతంగా నమోదు చేయబడింది. మీ టోకెన్ నంబర్ ${cleanTokenNum}.`;
+      const textEn = `Your token has been registered successfully. Your token number is ${tokenInfo.token_number}.`;
+      announceText(textTe, textEn);
+      return;
+    }
+    
+    // Case 2: Existing token status changed to active (called)
+    if (prev.status !== tokenInfo.status && tokenInfo.status === 'active') {
+      const counter = tokenInfo.counter_assigned || (language === 'te' ? 'కౌంటర్ 1' : 'Counter 1');
+      const cleanTokenNum = tokenInfo.token_number.replace('-', ' ');
+      const textTe = `దయచేసి గమనించండి, మీ టోకెన్ నంబర్ ${cleanTokenNum} పిలవబడింది. దయచేసి ${counter} కి వెళ్ళండి.`;
+      const textEn = `Please note, your token number ${tokenInfo.token_number} has been called. Please proceed to ${counter}.`;
+      announceText(textTe, textEn);
+    }
+    
+    // Sync current status
+    prevTokenStateRef.current.status = tokenInfo.status;
+  }, [tokenInfo, soundEnabled, isSpeechSupported, language]);
 
   // Fetch token status for the logged-in phone number
   const checkStatus = async (overridePhone) => {
@@ -41,6 +118,7 @@ export default function CustomerPortal({ backendUrl, language }) {
       setErrorMsg(language === 'te' ? 'సర్వర్‌ని సంప్రదించలేకపోయింది.' : 'Failed to reach server.');
     } finally {
       setLoading(false);
+      setInitialChecked(true);
     }
   };
 
@@ -57,6 +135,7 @@ export default function CustomerPortal({ backendUrl, language }) {
       localStorage.setItem('cp_phone', phoneNumber);
       localStorage.setItem('cp_name', customerName.trim());
       setIsVerified(true);
+      setInitialChecked(false);
       await checkStatus(phoneNumber);
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
@@ -75,7 +154,6 @@ export default function CustomerPortal({ backendUrl, language }) {
     try {
       const formData = new FormData();
       formData.append('From', fullPhone);
-      
       const bodyText = customerName.trim() ? `TOKEN: ${customerName.trim()}` : 'TOKEN';
       formData.append('Body', bodyText);
 
@@ -85,13 +163,28 @@ export default function CustomerPortal({ backendUrl, language }) {
       });
 
       if (res.ok) {
-        setTimeout(() => checkStatus(phoneNumber), 1100);
+        setJustRegistered(true);
+        setLoading(false);
+        // Retry fetching token up to 5 times with increasing delays
+        const delays = [1200, 2000, 3000, 4000, 5000];
+        for (const delay of delays) {
+          await new Promise(r => setTimeout(r, delay));
+          const tokenRes = await fetch(`${backendUrl}/api/tokens`);
+          if (tokenRes.ok) {
+            const allTokens = await tokenRes.json();
+            const found = allTokens.find(
+              t => t.phone_number === fullPhone && ['waiting', 'active', 'no_show'].includes(t.status)
+            );
+            if (found) { setTokenInfo(found); setJustRegistered(false); return; }
+          }
+        }
+        setJustRegistered(false);
       } else {
         setErrorMsg(language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.');
+        setLoading(false);
       }
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
-    } finally {
       setLoading(false);
     }
   };
@@ -104,9 +197,12 @@ export default function CustomerPortal({ backendUrl, language }) {
         const allTokens = await res.json();
         const waiting = allTokens.filter(t => t.status === 'waiting');
         const active = allTokens.filter(t => t.status === 'active');
-        const maxToken = allTokens.length > 0
-          ? Math.max(...allTokens.map(t => t.token_number || 0))
-          : 0;
+        const tokenNums = allTokens.map(t => {
+          if (!t.token_number) return 0;
+          const match = t.token_number.match(/\d+/);
+          return match ? parseInt(match[0], 10) : 0;
+        });
+        const maxToken = tokenNums.length > 0 ? Math.max(...tokenNums) : 0;
         setQueueInfo({
           waitingCount: waiting.length,
           activeCount: active.length,
@@ -150,11 +246,36 @@ export default function CustomerPortal({ backendUrl, language }) {
       <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       
       {/* Header */}
-      <div className="flex items-center gap-2.5 border-b border-slate-850 pb-4 mb-4">
-        <div>
-          <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">{t.appName}</h2>
-          <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase font-bold">{t.customerPortal}</span>
+      <div className="flex items-center justify-between border-b border-slate-850 pb-4 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div>
+            <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">{t.appName}</h2>
+            <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase font-bold">{t.customerPortal}</span>
+          </div>
         </div>
+        {isSpeechSupported && (
+          <button
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              localStorage.setItem('cp_sound', next ? 'true' : 'false');
+            }}
+            className="p-2 bg-slate-950 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 border border-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 text-[10px] font-bold"
+            title={soundEnabled ? "Mute Voice" : "Enable Voice"}
+          >
+            {soundEnabled ? (
+              <>
+                <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-500 font-bold hidden sm:inline">{language === 'te' ? 'వాయిస్ ఆన్' : 'Voice On'}</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-slate-500 font-bold hidden sm:inline">{language === 'te' ? 'వాయిస్ ఆఫ్' : 'Voice Off'}</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -205,7 +326,42 @@ export default function CustomerPortal({ backendUrl, language }) {
         ) : (
           /* Verified Views: Show ticket info if registered, or register option if new client */
           <div className="space-y-6 animate-fade-in">
-            {tokenInfo ? (
+            {!initialChecked ? (
+              /* Loading screen during initial check */
+              <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-slate-500 font-semibold">
+                  {language === 'te' ? 'క్యూ స్థితిని తనిఖీ చేస్తున్నాము...' : 'Checking queue status...'}
+                </p>
+              </div>
+            ) : justRegistered ? (
+              /* Registration Success — waiting for token confirmation */
+              <div className="flex flex-col items-center justify-center py-10 space-y-5 text-center animate-fade-in">
+                <div className="relative w-20 h-20">
+                  <svg className="w-20 h-20 animate-spin text-emerald-500/30" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="56 170" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl">🎫</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-extrabold text-emerald-400">
+                    {language === 'te' ? 'టోకెన్ నమోదు అవుతోంది...' : 'Registering your token...'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 leading-relaxed max-w-[220px] mx-auto">
+                    {language === 'te'
+                      ? 'దయచేసి వేచి ఉండండి. మీ టోకెన్ నంబర్ కొద్ది సేపట్లో వస్తుంది.'
+                      : 'Please wait. Your token number will appear in a moment.'}
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                </div>
+              </div>
+            ) : tokenInfo ? (
               /* Live Ticket view */
               <div className="space-y-5 text-center">
               <div className="space-y-2">
@@ -273,6 +429,7 @@ export default function CustomerPortal({ backendUrl, language }) {
                       setTokenInfo(null);
                       setPhoneNumber('');
                       setCustomerName('');
+                      setInitialChecked(false);
                       localStorage.removeItem('cp_phone');
                       localStorage.removeItem('cp_name');
                     }}
@@ -351,6 +508,7 @@ export default function CustomerPortal({ backendUrl, language }) {
                       setTokenInfo(null);
                       setPhoneNumber('');
                       setCustomerName('');
+                      setInitialChecked(false);
                       localStorage.removeItem('cp_phone');
                       localStorage.removeItem('cp_name');
                     }}

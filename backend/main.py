@@ -240,6 +240,17 @@ async def daily_report_sms_loop():
             print(f"Error in daily report SMS loop: {e}")
         await asyncio.sleep(60)
 
+def trigger_backup():
+    try:
+        try:
+            from backend.services.cloud_sync import trigger_cloud_backup_task
+        except ImportError:
+            from services.cloud_sync import trigger_cloud_backup_task
+        import threading
+        threading.Thread(target=trigger_cloud_backup_task, daemon=True).start()
+    except Exception as e:
+        print(f"[Cloud Sync] Failed to trigger background backup: {e}")
+
 # Startup Seeding
 @app.on_event("startup")
 def seed_users():
@@ -251,6 +262,8 @@ def seed_users():
     
     db = next(get_db())
     try:
+        from services.cloud_sync import restore_db
+        restore_db(db)
         # Ensure only the custom user Shanmukha exists
         # 1. Delete all old default seeded users to avoid clutter
         db.query(User).filter(User.username.in_(["owner", "staff", "accountant"])).delete(synchronize_session=False)
@@ -291,6 +304,45 @@ def seed_users():
             )
             db.add_all([basmati, sonamasuri, sharbati])
             db.commit()
+            
+        # Seed default sales for the last 7 days if no historical sales exist
+        import datetime
+        today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        has_historical_sales = db.query(Sale).filter(Sale.created_at < today_start).count() > 0
+        if not has_historical_sales:
+            import random
+            varieties = [
+                {"name": "Basmati", "price": 120.0},
+                {"name": "Sona Masuri", "price": 95.0},
+                {"name": "Sharbati", "price": 110.0}
+            ]
+            payment_modes = ["Cash", "UPI", "Card"]
+            now = datetime.datetime.utcnow()
+            
+            # We want to seed for the last 7 days
+            for i in range(6, -1, -1):
+                target_date = now - datetime.timedelta(days=i)
+                # Seed 2 to 4 sales per day
+                num_sales = 3 if i == 0 else random.randint(2, 4)
+                for j in range(num_sales):
+                    sale_time = target_date.replace(hour=4 + j*2 + random.randint(0, 1), minute=random.randint(0, 59))
+                    variety = random.choice(varieties)
+                    weight = random.randint(50, 150)
+                    total_price = weight * variety["price"]
+                    
+                    sale = Sale(
+                        token_id=None,
+                        variety_name=variety["name"],
+                        quantity_kg=float(weight),
+                        total_price=float(total_price),
+                        payment_mode=random.choice(payment_modes),
+                        service_time_seconds=random.randint(240, 600),
+                        created_at=sale_time
+                    )
+                    db.add(sale)
+            db.commit()
+            trigger_backup()
+            print("Successfully seeded historical sales data.")
     except Exception as e:
         print(f"Error seeding DB: {e}")
     finally:
@@ -465,6 +517,7 @@ def update_phone(request: UpdatePhoneRequest, db: Session = Depends(get_db), cur
         raise HTTPException(status_code=400, detail="Phone number is required.")
     current_user.phone_number = phone
     db.commit()
+    trigger_backup()
     return {"status": "success", "message": "Phone number updated for 2FA."}
 
 @app.get("/api/auth/me")
@@ -560,6 +613,7 @@ async def call_next_token(action: TokenCallNext, db: Session = Depends(get_db), 
     next_token.called_at = datetime.datetime.utcnow()
     db.commit()
     db.refresh(next_token)
+    trigger_backup()
     
     # Send NOW ACTIVE SMS
     sms_text = SMSService.get_active_sms_text(next_token.token_number, action.counter)
@@ -628,6 +682,7 @@ async def serve_token(token_id: int, sale_input: SaleCreate, db: Session = Depen
         token.customer_name = sale_input.customer_name
     db.commit()
     db.refresh(token)
+    trigger_backup()
     
     # Send served SMS receipt
     sms_text = SMSService.get_served_sms_text(token.token_number, total_bill)
@@ -655,6 +710,7 @@ async def mark_no_show(token_id: int, db: Session = Depends(get_db), current_use
     token.status = "no_show"
     db.commit()
     db.refresh(token)
+    trigger_backup()
     
     # Send no-show SMS
     sms_text = SMSService.get_noshow_sms_text(token.token_number)
@@ -677,6 +733,7 @@ async def reactivate_token(token_id: int, db: Session = Depends(get_db), current
     token.counter_assigned = None
     db.commit()
     db.refresh(token)
+    trigger_backup()
     
     # Re-calculate wait time
     today = datetime.date.today()
@@ -730,6 +787,7 @@ def add_stock(stock_in: StockCreate, db: Session = Depends(get_db), current_user
     )
     db.add(ph)
     db.commit()
+    trigger_backup()
     
     stock.bags_count = stock.quantity_kg / 10.0
     return stock
@@ -765,6 +823,7 @@ def update_stock(stock_id: int, update: StockUpdate, db: Session = Depends(get_d
         db.add(ph)
         db.commit()
         
+    trigger_backup()
     stock.bags_count = stock.quantity_kg / 10.0
     return stock
 
@@ -965,6 +1024,7 @@ async def update_settings(update: SystemSettingUpdate, db: Session = Depends(get
         
     db.commit()
     db.refresh(settings)
+    trigger_backup()
     
     # Broadcast to all active clients (WebSockets)
     await broadcast_queue_update()
@@ -1066,6 +1126,7 @@ async def bulk_import_stock(
             raise HTTPException(status_code=400, detail=f"CSV parse error: {str(e)}")
             
     db.commit()
+    trigger_backup()
     return {
         "status": "success",
         "imported": imported_count,

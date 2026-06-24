@@ -5,7 +5,7 @@ import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SettingsPage from './pages/Settings';
-import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings } from 'lucide-react';
+import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings, Sun, Moon } from 'lucide-react';
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
@@ -44,9 +44,23 @@ export default function App() {
     return localStorage.getItem('language') || 'te';
   });
 
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
   const sessionTimeoutRef = useRef(null);
 
   const t = translations[language];
+
+  // Apply theme on mount and whenever it changes
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+  };
 
   // Toast Dispatcher
   const showToast = (type, message) => {
@@ -461,6 +475,13 @@ export default function App() {
             <Languages className="w-3.5 h-3.5 text-emerald-400" />
             {language === 'te' ? 'English' : 'తెలుగు'}
           </button>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs px-3.5 py-2 rounded-xl border border-slate-800/80 transition-all font-semibold shadow-lg cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+          </button>
           <button 
             onClick={handleLogout}
             className="bg-rose-950/40 hover:bg-rose-900/40 text-rose-300 hover:text-rose-200 text-xs px-3.5 py-2 rounded-xl border border-rose-900/30 transition-all font-semibold shadow-lg cursor-pointer"
@@ -495,6 +516,13 @@ export default function App() {
             <Languages className="w-3.5 h-3.5 text-emerald-500" />
             {language === 'te' ? 'English' : 'తెలుగు'}
           </button>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition-colors font-semibold cursor-pointer"
+            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+          </button>
         </div>
         <div className="w-full max-w-md z-10">
           <CustomerPortal backendUrl={BACKEND_URL} language={language} />
@@ -512,14 +540,21 @@ export default function App() {
         <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
         <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
 
-        {/* Global language switcher top right */}
-        <div className="absolute top-4 right-4 z-50">
+        {/* Global switcher buttons top right */}
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
           <button
             onClick={toggleLanguage}
             className="flex items-center gap-1.5 bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
           >
             <Languages className="w-4 h-4 text-emerald-400" />
             {language === 'te' ? 'English' : 'తెలుగు'}
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
           </button>
         </div>
 
@@ -556,15 +591,25 @@ export default function App() {
             <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-amber-500/20 transition-colors duration-500">
               <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-700/40 to-transparent" />
 
-              {/* Language Tabs */}
-              <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
-                <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                  తెలుగు (Telugu)
-                </button>
-                <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                  English
+              {/* Language Tabs & Theme Toggle */}
+              <div className="flex gap-2">
+                <div className="flex-1 flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
+                  <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
+                    తెలుగు
+                  </button>
+                  <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
+                    English
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="bg-slate-950 p-2.5 rounded-2xl border border-slate-850 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-inner"
+                  title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-500" />}
                 </button>
               </div>
 
@@ -704,11 +749,11 @@ export default function App() {
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-950/60 border border-slate-800 flex items-center justify-center p-0.5 overflow-hidden shadow-inner">
+          <div className="w-12 h-12 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center p-1 overflow-hidden shadow-inner">
             <img 
               src={`${import.meta.env.BASE_URL}login_illustration.png`} 
               alt="Sri Tirumala Rice Mill Logo" 
-              className="w-full h-full object-contain rounded-md"
+              className="w-full h-full object-contain rounded-lg"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
@@ -787,6 +832,15 @@ export default function App() {
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Counter Mode"}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-emerald-500" /> : <Maximize2 className="w-3.5 h-3.5 text-slate-450" />}
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 bg-slate-950 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 border border-slate-900 transition-colors cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
           </button>
 
           {/* In-app Notification Bell */}

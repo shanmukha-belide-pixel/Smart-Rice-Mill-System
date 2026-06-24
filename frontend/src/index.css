@@ -59,7 +59,166 @@
 body {
   font-family: 'Outfit', sans-serif;
   @apply bg-slate-950 text-slate-100 antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* ============================================================
+   LIGHT MODE OVERRIDES
+   Applied when <html data-theme="light"> is set
+   ============================================================ */
+[data-theme="light"] body,
+[data-theme="light"] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Backgrounds */
+[data-theme="light"] .bg-slate-950, [data-theme="light"] [class*="bg-slate-950"]  { background-color: #f8fafc !important; }
+[data-theme="light"] .bg-slate-905, [data-theme="light"] [class*="bg-slate-905"]  { background-color: #f1f5f9 !important; }
+[data-theme="light"] .bg-slate-900, [data-theme="light"] [class*="bg-slate-900"]  { background-color: #f1f5f9 !important; }
+[data-theme="light"] .bg-slate-805, [data-theme="light"] [class*="bg-slate-805"]  { background-color: #cbd5e1 !important; }
+[data-theme="light"] .bg-slate-900\/40, [data-theme="light"] [class*="bg-slate-900/40"] { background-color: rgba(241,245,249,0.45) !important; }
+[data-theme="light"] .bg-slate-900\/60, [data-theme="light"] [class*="bg-slate-900/60"] { background-color: rgba(241,245,249,0.6) !important; }
+[data-theme="light"] .bg-slate-900\/80, [data-theme="light"] [class*="bg-slate-900/80"] { background-color: rgba(241,245,249,0.8) !important; }
+[data-theme="light"] .bg-slate-900\/95, [data-theme="light"] [class*="bg-slate-900/95"] { background-color: rgba(241,245,249,0.95) !important; }
+[data-theme="light"] .bg-slate-900\/50, [data-theme="light"] [class*="bg-slate-900/50"] { background-color: rgba(241,245,249,0.5) !important; }
+[data-theme="light"] .bg-slate-900\/30, [data-theme="light"] [class*="bg-slate-900/30"] { background-color: rgba(241,245,249,0.3) !important; }
+[data-theme="light"] .bg-slate-900\/20, [data-theme="light"] [class*="bg-slate-900/20"] { background-color: rgba(241,245,249,0.2) !important; }
+[data-theme="light"] .bg-slate-900\/10, [data-theme="light"] [class*="bg-slate-900/10"] { background-color: rgba(241,245,249,0.1) !important; }
+[data-theme="light"] .bg-slate-900\/90, [data-theme="light"] [class*="bg-slate-900/90"] { background-color: rgba(241,245,249,0.9) !important; }
+[data-theme="light"] .bg-slate-950\/40, [data-theme="light"] [class*="bg-slate-950/40"] { background-color: rgba(255,255,255,0.4) !important; }
+[data-theme="light"] .bg-slate-950\/50, [data-theme="light"] [class*="bg-slate-950/50"] { background-color: rgba(255,255,255,0.5) !important; }
+[data-theme="light"] .bg-slate-950\/60, [data-theme="light"] [class*="bg-slate-950/60"] { background-color: rgba(255,255,255,0.6) !important; }
+[data-theme="light"] .bg-slate-950\/65, [data-theme="light"] [class*="bg-slate-950/65"] { background-color: rgba(255,255,255,0.8) !important; }
+[data-theme="light"] .bg-slate-950\/80, [data-theme="light"] [class*="bg-slate-950/80"] { background-color: rgba(255,255,255,0.8) !important; }
+[data-theme="light"] .bg-slate-950\/20, [data-theme="light"] [class*="bg-slate-950/20"] { background-color: rgba(255,255,255,0.2) !important; }
+[data-theme="light"] .bg-slate-800, [data-theme="light"] [class*="bg-slate-800"]  { background-color: #e2e8f0 !important; }
+[data-theme="light"] .bg-slate-855, [data-theme="light"] [class*="bg-slate-855"]  { background-color: #e2e8f0 !important; }
+[data-theme="light"] .bg-slate-850, [data-theme="light"] [class*="bg-slate-850"]  { background-color: #dde3ec !important; }
+
+/* Text */
+[data-theme="light"] .text-slate-100 { color: #0f172a !important; }
+[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+[data-theme="light"] .text-slate-350 { color: #475569 !important; }
+[data-theme="light"] .text-slate-355 { color: #475569 !important; }
+[data-theme="light"] .text-slate-400 { color: #475569 !important; }
+[data-theme="light"] .text-slate-450 { color: #475569 !important; }
+[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+[data-theme="light"] .text-slate-550 { color: #64748b !important; }
+[data-theme="light"] .text-slate-600 { color: #94a3b8 !important; }
+
+/* Hover States */
+[data-theme="light"] .hover\:text-slate-100:hover { color: #0f172a !important; }
+[data-theme="light"] .hover\:text-slate-200:hover { color: #1e293b !important; }
+[data-theme="light"] .hover\:text-slate-300:hover { color: #1e293b !important; }
+[data-theme="light"] .hover\:text-slate-400:hover { color: #334155 !important; }
+[data-theme="light"] .hover\:bg-slate-900:hover { background-color: #cbd5e1 !important; }
+[data-theme="light"] .hover\:bg-slate-800:hover { background-color: #cbd5e1 !important; }
+[data-theme="light"] .hover\:bg-slate-855:hover { background-color: #cbd5e1 !important; }
+[data-theme="light"] .hover\:bg-slate-755:hover { background-color: #cbd5e1 !important; }
+
+/* Borders */
+[data-theme="light"] .border-slate-800   { border-color: #cbd5e1 !important; }
+[data-theme="light"] .border-slate-800\/60 { border-color: rgba(203,213,225,0.6) !important; }
+[data-theme="light"] .border-slate-800\/80 { border-color: rgba(203,213,225,0.8) !important; }
+[data-theme="light"] .border-slate-850   { border-color: #cbd5e1 !important; }
+[data-theme="light"] .border-slate-850\/60 { border-color: rgba(203,213,225,0.6) !important; }
+[data-theme="light"] .border-slate-900   { border-color: #e2e8f0 !important; }
+[data-theme="light"] .border-slate-900\/80 { border-color: rgba(226,232,240,0.8) !important; }
+
+/* Background & Border Overrides for Light Theme - Slate, Emerald, Rose, Amber */
+[data-theme="light"] .bg-slate-955, 
+[data-theme="light"] [class*="bg-slate-955"] { 
+  background-color: #f8fafc !important; 
+}
+[data-theme="light"] [class*="bg-emerald-95"] {
+  background-color: rgba(209, 250, 229, 0.7) !important;
+}
+[data-theme="light"] [class*="bg-emerald-950/10"] {
+  background-color: rgba(240, 253, 250, 0.8) !important;
+}
+[data-theme="light"] [class*="bg-rose-95"] {
+  background-color: rgba(254, 226, 226, 0.7) !important;
+}
+[data-theme="light"] [class*="bg-amber-95"] {
+  background-color: rgba(254, 243, 199, 0.7) !important;
+}
+
+[data-theme="light"] [class*="border-emerald-"] {
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+[data-theme="light"] [class*="border-rose-"] {
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+[data-theme="light"] [class*="border-amber-"] {
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-emerald-450,
+[data-theme="light"] .text-emerald-500 {
+  color: #047857 !important;
+}
+[data-theme="light"] .text-rose-300,
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-rose-450,
+[data-theme="light"] .text-rose-455,
+[data-theme="light"] .text-rose-500 {
+  color: #b91c1c !important;
+}
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-amber-450,
+[data-theme="light"] .text-amber-500 {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .bg-emerald-400,
+[data-theme="light"] [class*="bg-emerald-400"] {
+  background-color: #10b981 !important;
+}
+
+/* Specific Stock Card Gradient Override for Low Stock in Light Mode */
+[data-theme="light"] [class*="to-rose-9"] {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(254, 226, 226, 0.4)) !important;
+}
+
+/* Text Gradient Readability Overrides */
+[data-theme="light"] .text-transparent.bg-clip-text,
+[data-theme="light"] .bg-clip-text.text-transparent {
+  background-clip: border-box !important;
+  -webkit-background-clip: border-box !important;
+  -webkit-text-fill-color: initial !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-transparent.bg-clip-text.from-emerald-400,
+[data-theme="light"] .bg-clip-text.text-transparent.from-emerald-400 {
+  color: #059669 !important;
+}
+
+/* Glass panel overrides */
+[data-theme="light"] .glass-panel {
+  background: rgba(255,255,255,0.95) !important;
+  border: 1px solid rgba(251,191,36,0.25) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,0.8) !important;
+}
+
+/* Inputs */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="light"] input::placeholder { color: #94a3b8 !important; }
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(241,245,249,0.5); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
 
 /* Glassmorphism Styles - Luxury Thin Borders */
 .glass-panel {

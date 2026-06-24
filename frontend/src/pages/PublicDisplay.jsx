@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, TrendingUp, Users, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, TrendingUp, Users, Clock, Volume2, VolumeX } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function PublicDisplay({ backendUrl, language }) {
@@ -7,7 +7,22 @@ export default function PublicDisplay({ backendUrl, language }) {
   const [stock, setStock] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Audio/voice announcement states
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('pd_sound') === 'true';
+  });
+  const [hasInitializedActiveTokens, setHasInitializedActiveTokens] = useState(false);
+  const announcedTokensRef = useRef(new Set());
+
   const t = translations[language || 'te'];
+
+  // Check speech synthesis support
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      setIsSpeechSupported(true);
+    }
+  }, []);
 
   // Fetch prices and tokens
   const fetchData = async () => {
@@ -27,6 +42,68 @@ export default function PublicDisplay({ backendUrl, language }) {
       console.error(err);
     }
   };
+
+  // Speak announcement in Telugu with English fallback
+  const announceToken = (tokenNumber, counter) => {
+    if (!isSpeechSupported || !soundEnabled) return;
+    
+    // Cancel active speech to avoid queuing delays
+    window.speechSynthesis.cancel();
+    
+    const cleanTokenNum = tokenNumber.replace('-', ' ');
+    const teluguText = `టోకెన్ నంబర్ ${cleanTokenNum} దయచేసి ${counter} కి రండి.`;
+    
+    const utteranceTe = new SpeechSynthesisUtterance(teluguText);
+    utteranceTe.lang = 'te-IN';
+    utteranceTe.rate = 0.8;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const teluguVoice = voices.find(v => v.lang.includes('te'));
+    
+    if (teluguVoice) {
+      utteranceTe.voice = teluguVoice;
+      window.speechSynthesis.speak(utteranceTe);
+    } else {
+      // Fallback to English
+      const englishText = `Token number ${tokenNumber}, please proceed to ${counter}.`;
+      const utteranceEn = new SpeechSynthesisUtterance(englishText);
+      utteranceEn.lang = 'en-IN';
+      utteranceEn.rate = 0.85;
+      const englishVoice = voices.find(v => v.lang.includes('en'));
+      if (englishVoice) utteranceEn.voice = englishVoice;
+      window.speechSynthesis.speak(utteranceEn);
+    }
+  };
+
+  // Monitor tokens to trigger voice announcements for new active tokens
+  useEffect(() => {
+    if (tokens.length === 0) return;
+    
+    const active = tokens.filter(t => t.status === 'active');
+    
+    if (!hasInitializedActiveTokens) {
+      // On first mount, treat currently active tokens as already announced
+      const initialIds = new Set(active.map(t => t.id));
+      announcedTokensRef.current = initialIds;
+      setHasInitializedActiveTokens(true);
+      return;
+    }
+    
+    // Synchronize announced tokens set with currently active tokens list
+    const activeIds = new Set(active.map(t => t.id));
+    announcedTokensRef.current = new Set(
+      Array.from(announcedTokensRef.current).filter(id => activeIds.has(id))
+    );
+    
+    // Announce any newly active tokens
+    active.forEach(token => {
+      if (!announcedTokensRef.current.has(token.id)) {
+        announcedTokensRef.current.add(token.id);
+        const counterName = token.counter_assigned || (language === 'te' ? 'కౌంటర్ 1' : 'Counter 1');
+        announceToken(token.token_number, counterName);
+      }
+    });
+  }, [tokens, hasInitializedActiveTokens, soundEnabled, language]);
 
   useEffect(() => {
     fetchData();
@@ -93,13 +170,33 @@ export default function PublicDisplay({ backendUrl, language }) {
           </div>
         </div>
         
-        {/* Dynamic Clock */}
-        <div className="text-right font-mono">
-          <div className="text-2xl font-bold text-slate-200">
-            {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
-            {currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}
+        <div className="flex items-center gap-5">
+          {/* Sound Toggle */}
+          {isSpeechSupported && (
+            <button
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                localStorage.setItem('pd_sound', next ? 'true' : 'false');
+              }}
+              className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-xl border border-slate-800/80 transition-all font-semibold shadow-lg cursor-pointer"
+              title={soundEnabled ? "Mute announcements" : "Enable voice announcements"}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+              <span className="font-bold text-[10px] tracking-wide uppercase">
+                {soundEnabled ? (language === 'te' ? 'వాయిస్ ఆన్' : 'Voice On') : (language === 'te' ? 'వాయిస్ ఆఫ్' : 'Voice Off')}
+              </span>
+            </button>
+          )}
+
+          {/* Dynamic Clock */}
+          <div className="text-right font-mono">
+            <div className="text-2xl font-bold text-slate-200">
+              {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
+              {currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}
+            </div>
           </div>
         </div>
       </div>
