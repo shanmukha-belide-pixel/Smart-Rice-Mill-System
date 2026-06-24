@@ -3,7 +3,10 @@ import json
 import urllib.request
 import datetime
 from sqlalchemy.orm import Session
-from models import SystemSetting, Stock, Token, Sale
+try:
+    from backend.models import SystemSetting, Stock, Token, Sale
+except ImportError:
+    from models import SystemSetting, Stock, Token, Sale
 
 MOCK_BIN_URL = "https://extendsclass.com/api/json-storage/bin/ccfedec"
 
