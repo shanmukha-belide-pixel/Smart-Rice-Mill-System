@@ -280,8 +280,8 @@ export default function App() {
       headers: { Authorization: `Bearer ${storedToken}` }
     })
       .then(res => {
-        if (!res.ok) {
-          // Token is expired or invalid — force logout
+        if (res.status === 401 || res.status === 403) {
+          // Token is explicitly expired or invalid — force logout
           handleLogout();
         }
       })
