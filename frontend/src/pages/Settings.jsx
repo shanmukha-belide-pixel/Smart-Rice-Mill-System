@@ -16,8 +16,6 @@ export default function Settings({ backendUrl, userToken, language }) {
   const [securityStatus, setSecurityStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState(''); // 'saving', 'success', 'error'
-  const [testSmsStatus, setTestSmsStatus] = useState(''); // 'sending', 'success', 'error'
-  const [twoFaSaveStatus, setTwoFaSaveStatus] = useState(''); // 'saving', 'success', 'error', 'clearing'
   
   const t = translations[language || 'te'];
 
@@ -80,48 +78,6 @@ export default function Settings({ backendUrl, userToken, language }) {
     }
   };
 
-  const handleSendTestSms = async () => {
-    setTestSmsStatus('sending');
-    try {
-      // Fetch daily report preview
-      const reportRes = await fetch(`${backendUrl}/api/reports/daily`, {
-        headers: { 'Authorization': `Bearer ${userToken}` }
-      });
-      if (!reportRes.ok) throw new Error();
-      const dailyData = await reportRes.json();
-      
-      // Construct sample SMS
-      const stockSplit = Object.entries(dailyData.stock_consumed)
-        .map(([varName, qty]) => `  ├ ${varName}: ${qty.toFixed(0)} kg`)
-        .join('\n') || '  ├ None';
-        
-      const smsText = `📊 ${settings.mill_name || 'Sri Tirumala Rice Mill'} - Daily Report\nDate: ${dailyData.date}\n----------------------\nTokens Served: ${dailyData.tokens_served}\nNo-Shows: ${dailyData.no_shows} (${dailyData.no_show_rate.toFixed(1)}%)\nTotal Revenue: ₹${dailyData.total_revenue.toLocaleString('en-IN')}\nStock Consumed:\n${stockSplit}`;
-      
-      // Trigger simulation via standard SMS send logic
-      const formData = new FormData();
-      formData.append('From', '+919999999999'); // send mock SMS to Owner
-      formData.append('Body', 'STATUS'); // dummy action, just logic check
-      
-      // Directly call simulator dispatch
-      const res = await fetch(`${backendUrl}/api/webhooks/sms`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${userToken}` },
-        body: new URLSearchParams({
-          From: '+919999999999',
-          Body: `MOCK_SMS_REPORT: ${smsText}`
-        })
-      });
-      
-      if (res.ok) {
-        setTestSmsStatus('success');
-        setTimeout(() => setTestSmsStatus(''), 2000);
-      } else {
-        setTestSmsStatus('error');
-      }
-    } catch (err) {
-      setTestSmsStatus('error');
-    }
-  };
 
   if (loading) {
     return (
@@ -152,7 +108,7 @@ export default function Settings({ backendUrl, userToken, language }) {
             <form onSubmit={handleSaveSettings} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Mill name */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:col-span-2">
                   <label className="block text-xs font-semibold text-slate-400">{t.millNameSetting}</label>
                   <input
                     type="text"
@@ -160,17 +116,6 @@ export default function Settings({ backendUrl, userToken, language }) {
                     className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 font-bold"
                     value={settings.mill_name}
                     onChange={(e) => setSettings({ ...settings, mill_name: e.target.value })}
-                  />
-                </div>
-                {/* Virtual number */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-400">{t.virtualNumberSetting}</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-100 font-mono"
-                    value={settings.virtual_number}
-                    onChange={(e) => setSettings({ ...settings, virtual_number: e.target.value })}
                   />
                 </div>
               </div>
@@ -211,23 +156,6 @@ export default function Settings({ backendUrl, userToken, language }) {
                     <span>{t.queueHoldSetting}</span>
                   </label>
                 </div>
-              </div>
-
-              {/* SMS Gateway Toggle */}
-              <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 flex justify-between items-center text-xs">
-                <div>
-                  <h4 className="font-bold text-slate-300">{t.smsGatewaySetting}</h4>
-                  <p className="text-[10px] text-slate-500 mt-1">If enabled, SMS APIs (Exotel/Twilio) will be active for mobile sync.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={settings.sms_gateway_active}
-                    onChange={(e) => setSettings({ ...settings, sms_gateway_active: e.target.checked })}
-                  />
-                  <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                </label>
               </div>
 
               <div className="flex justify-end gap-3 border-t border-slate-850/60 pt-4">

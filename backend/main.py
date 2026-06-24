@@ -19,10 +19,10 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 from backend.database import engine, Base, get_db
 from backend.models import User, Token, Stock, Sale, PriceHistory, SystemSetting
 from backend.schemas import UserCreate, UserLogin, TokenAuth, StockCreate, StockUpdate, StockResponse, TokenResponse, TokenCallNext, SaleCreate, SaleResponse, DailyReportResponse, SystemSettingResponse, SystemSettingUpdate
-from backend.services.sms_service import SMSService, datetime_now_str
-from backend.services.email_service import EmailService
+def datetime_now_str() -> str:
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 from backend.main_shared import simulator_connections, broadcast_to_simulator, queue_connections, broadcast_queue_update
-from backend.routes.webhooks import router as webhook_router, calculate_estimated_wait_time
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -112,7 +112,80 @@ def migrate_and_seed():
     finally:
         db.close()
 
-# Background task for checking no-show timers (5 minutes timeout)
+def get_next_token_number(db: Session) -> str:
+    """
+    Generates next token number like T-001. Resets at midnight.
+    """
+    today = datetime.date.today()
+    start_of_day = datetime.datetime.combine(today, datetime.time.min)
+    
+    count = db.query(Token).filter(Token.created_at >= start_of_day).count()
+    return f"T-{count + 1:03d}"
+
+def calculate_estimated_wait_time(db: Session, position: int) -> int:
+    """
+    Calculates wait time: position * avg_service_time (default 8 mins).
+    """
+    recent_sales = db.query(Sale).order_by(Sale.created_at.desc()).limit(10).all()
+    if recent_sales:
+        avg_service_time = sum(s.service_time_seconds for s in recent_sales) / len(recent_sales) / 60.0
+    else:
+        avg_service_time = 8.0
+        
+    avg_service_time = max(3.0, min(20.0, avg_service_time))
+    return int(position * avg_service_time)
+
+async def register_customer_token(db: Session, phone_number: str, priority: bool = False, priority_reason: str = None, customer_name: str = None) -> Optional[Token]:
+    """
+    Core token registration logic without SMS notification.
+    """
+    settings = db.query(SystemSetting).first()
+    if settings and settings.holiday_mode:
+        return None
+
+    today = datetime.date.today()
+    start_of_day = datetime.datetime.combine(today, datetime.time.min)
+    
+    existing = db.query(Token).filter(
+        Token.phone_number == phone_number,
+        Token.created_at >= start_of_day,
+        Token.status.in_(["waiting", "active"])
+    ).first()
+    
+    if existing:
+        return existing
+        
+    token_num = get_next_token_number(db)
+    waiting_count = db.query(Token).filter(
+        Token.status == "waiting",
+        Token.created_at >= start_of_day
+    ).count()
+    
+    wait_time = calculate_estimated_wait_time(db, waiting_count + 1)
+    
+    new_token = Token(
+        token_number=token_num,
+        phone_number=phone_number,
+        customer_name=customer_name,
+        status="waiting",
+        priority=priority,
+        priority_reason=priority_reason,
+        wait_time_minutes=wait_time,
+        created_at=datetime.datetime.utcnow()
+    )
+    db.add(new_token)
+    db.commit()
+    db.refresh(new_token)
+    
+    # Live broadcast to all active dashboards
+    await broadcast_queue_update()
+    
+    # Trigger cloud backup
+    trigger_backup()
+    
+    return new_token
+
+# Background task for checking no-show timers (5 minutes timeout) without SMS triggers
 async def auto_skip_no_shows_loop():
     await asyncio.sleep(5) # wait for startup
     while True:
@@ -132,10 +205,6 @@ async def auto_skip_no_shows_loop():
                     token.no_show_at = now
                     db.commit()
                     db.refresh(token)
-                    
-                    # Send SMS
-                    sms_text = SMSService.get_noshow_sms_text(token.token_number)
-                    await SMSService.send_sms(token.phone_number, sms_text)
                     
                     # Auto call next token on the same counter!
                     counter = token.counter_assigned
@@ -160,21 +229,6 @@ async def auto_skip_no_shows_loop():
                             next_token.called_at = now
                             db.commit()
                             
-                            # Send NOW ACTIVE SMS
-                            active_sms = SMSService.get_active_sms_text(next_token.token_number, counter)
-                            await SMSService.send_sms(next_token.phone_number, active_sms)
-                            
-                            # Alert next token (position = 2) that they are 2 Away
-                            second_token = db.query(Token).filter(
-                                Token.status == "waiting",
-                                Token.created_at >= datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-                            ).order_by(Token.priority.desc(), Token.created_at).first()
-                            
-                            if second_token:
-                                sec_wait = calculate_estimated_wait_time(db, 2)
-                                sec_sms = SMSService.get_2_away_sms_text(second_token.token_number, sec_wait)
-                                await SMSService.send_sms(second_token.phone_number, sec_sms)
-                                
                     await broadcast_queue_update()
         except Exception as e:
             print(f"Error in auto-skip loop: {e}")
@@ -182,63 +236,6 @@ async def auto_skip_no_shows_loop():
             db.close()
         await asyncio.sleep(10)
 
-# Background task for sending daily 10 PM IST SMS report summary
-last_sent_report_date = None
-
-async def daily_report_sms_loop():
-    global last_sent_report_date
-    await asyncio.sleep(10) # wait for startup
-    while True:
-        try:
-            utc_now = datetime.datetime.utcnow()
-            ist_now = utc_now + datetime.timedelta(hours=5, minutes=30)
-            
-            # Check if it is 10:00 PM IST (22:00)
-            if ist_now.hour == 22 and ist_now.minute == 0:
-                today_str = ist_now.strftime("%Y-%m-%d")
-                if last_sent_report_date != today_str:
-                    db = next(get_db())
-                    try:
-                        settings = db.query(SystemSetting).first()
-                        mill_name = settings.mill_name if settings else "Sri Tirumala Rice Mill"
-                        today_date = datetime.date.today()
-                        start_of_day = datetime.datetime.combine(today_date, datetime.time.min)
-                        
-                        tokens = db.query(Token).filter(Token.created_at >= start_of_day).all()
-                        served = len([t for t in tokens if t.status == "served"])
-                        no_shows = len([t for t in tokens if t.status == "no_show"])
-                        no_show_rate = (no_shows / len(tokens) * 100.0) if tokens else 0.0
-                        
-                        sales = db.query(Sale).filter(Sale.created_at >= start_of_day).all()
-                        total_rev = sum(s.total_price for s in sales)
-                        
-                        stock_consumed = {}
-                        for s in sales:
-                            stock_consumed[s.variety_name] = stock_consumed.get(s.variety_name, 0.0) + s.quantity_kg
-                            
-                        stock_lines = [f"  ├ {var}: {qty:.0f} kg" for var, qty in stock_consumed.items()]
-                        stock_str = "\n".join(stock_lines) if stock_lines else "  ├ None"
-                        
-                        report_sms = (
-                            f"📊 {mill_name} - Daily Report\n"
-                            f"Date: {ist_now.strftime('%d-%b-%Y')}\n"
-                            f"----------------------\n"
-                            f"Tokens Served: {served}\n"
-                            f"No-Shows: {no_shows} ({no_show_rate:.1f}%)\n"
-                            f"Total Revenue: ₹{total_rev:.0f}\n"
-                            f"Stock Consumed:\n{stock_str}"
-                        )
-                        
-                        await SMSService.send_sms("+919999999999", report_sms)
-                        last_sent_report_date = today_str
-                        print(f"Sent daily SMS report at 10 PM IST: {today_str}")
-                    except Exception as inner_e:
-                        print(f"Error generating daily SMS report: {inner_e}")
-                    finally:
-                        db.close()
-        except Exception as e:
-            print(f"Error in daily report SMS loop: {e}")
-        await asyncio.sleep(60)
 
 def trigger_backup():
     try:
@@ -258,7 +255,6 @@ def seed_users():
     
     # Start background loops
     asyncio.create_task(auto_skip_no_shows_loop())
-    asyncio.create_task(daily_report_sms_loop())
     
     db = next(get_db())
     try:
@@ -396,129 +392,7 @@ async def ws_simulator_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         simulator_connections.discard(websocket)
 
-# --- OTP stores ---
-OTP_STORE = {}       # {phone_number: {"otp": otp, "expires_at": expires_at}}
-EMAIL_OTP_STORE = {} # {email: {"otp": otp, "expires_at": expires_at}}
-LOGIN_OTP_STORE = {} # {username: {"otp": otp, "expires_at": expires_at}}
 
-# ── Phone OTP (Customer Portal) ──────────────────────────────────────────
-class SendOTPRequest(BaseModel):
-    phone_number: str
-
-class VerifyOTPRequest(BaseModel):
-    phone_number: str
-    otp: str
-
-@app.post("/api/auth/send-otp")
-async def send_otp(request: SendOTPRequest):
-    import random
-    phone = request.phone_number.strip()
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number is required.")
-    otp = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
-    OTP_STORE[phone] = {"otp": otp, "expires_at": expires_at}
-    message = f"Your verification code for Sri Tirumala Rice Mill is: {otp}. Valid for 5 minutes."
-    await SMSService.send_sms(phone, message)
-    print(f"[SMS OTP] Phone: {phone} -> OTP: {otp}")
-    return {"status": "success", "message": "OTP sent to your mobile number."}
-
-@app.post("/api/auth/verify-otp")
-def verify_otp(request: VerifyOTPRequest):
-    phone = request.phone_number.strip()
-    entered_otp = request.otp.strip()
-    if not phone or not entered_otp:
-        raise HTTPException(status_code=400, detail="Phone number and OTP are required.")
-    if entered_otp == "123456":  # bypass for testing
-        return {"status": "success", "message": "OTP verified successfully."}
-    stored = OTP_STORE.get(phone)
-    if not stored:
-        raise HTTPException(status_code=400, detail="No OTP requested for this phone number.")
-    if datetime.datetime.utcnow() > stored["expires_at"]:
-        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
-    if stored["otp"] != entered_otp:
-        raise HTTPException(status_code=400, detail="Invalid OTP code.")
-    del OTP_STORE[phone]
-    return {"status": "success", "message": "OTP verified successfully."}
-
-# ── Email OTP (Customer Portal email login) ───────────────────────────────
-class SendEmailOTPRequest(BaseModel):
-    email: str
-
-class VerifyEmailOTPRequest(BaseModel):
-    email: str
-    otp: str
-
-@app.post("/api/auth/send-email-otp")
-async def send_email_otp(request: SendEmailOTPRequest):
-    import random
-    email = request.email.strip().lower()
-    if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="A valid email address is required.")
-    otp = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
-    EMAIL_OTP_STORE[email] = {"otp": otp, "expires_at": expires_at}
-    success = await EmailService.send_otp_email(email, otp)
-    print(f"[Email OTP] Email: {email} -> OTP: {otp}")
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")
-    return {"status": "success", "message": "OTP sent to your email address."}
-
-@app.post("/api/auth/verify-email-otp")
-def verify_email_otp(request: VerifyEmailOTPRequest):
-    email = request.email.strip().lower()
-    entered_otp = request.otp.strip()
-    if not email or not entered_otp:
-        raise HTTPException(status_code=400, detail="Email and OTP are required.")
-    if entered_otp == "123456":  # bypass for testing
-        return {"status": "success", "message": "Email OTP verified successfully."}
-    stored = EMAIL_OTP_STORE.get(email)
-    if not stored:
-        raise HTTPException(status_code=400, detail="No OTP requested for this email.")
-    if datetime.datetime.utcnow() > stored["expires_at"]:
-        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
-    if stored["otp"] != entered_otp:
-        raise HTTPException(status_code=400, detail="Invalid OTP code.")
-    del EMAIL_OTP_STORE[email]
-    return {"status": "success", "message": "Email OTP verified successfully."}
-
-# ── Login OTP (2FA for Operators) ─────────────────────────────────────────
-class VerifyLoginOTPRequest(BaseModel):
-    username: str
-    otp: str
-
-@app.post("/api/auth/verify-login-otp")
-async def verify_login_otp(request: VerifyLoginOTPRequest, db: Session = Depends(get_db)):
-    username = request.username.strip()
-    entered_otp = request.otp.strip()
-    stored = LOGIN_OTP_STORE.get(username)
-    if not stored:
-        raise HTTPException(status_code=400, detail="No login OTP found. Please login again.")
-    if datetime.datetime.utcnow() > stored["expires_at"]:
-        del LOGIN_OTP_STORE[username]
-        raise HTTPException(status_code=400, detail="Login OTP expired. Please login again.")
-    if entered_otp == "123456" or stored["otp"] == entered_otp:  # bypass for testing
-        del LOGIN_OTP_STORE[username]
-        user = db.query(User).filter(User.username == username).first()
-        if not user:
-            raise HTTPException(status_code=400, detail="User not found.")
-        access_token = create_access_token(data={"sub": user.username})
-        return {"access_token": access_token, "token_type": "bearer", "role": user.role, "full_name": user.full_name}
-    raise HTTPException(status_code=400, detail="Invalid OTP code.")
-
-# ── Update operator phone number for 2FA ──────────────────────────────────
-class UpdatePhoneRequest(BaseModel):
-    phone_number: str
-
-@app.put("/api/auth/update-phone")
-def update_phone(request: UpdatePhoneRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    phone = request.phone_number.strip()
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number is required.")
-    current_user.phone_number = phone
-    db.commit()
-    trigger_backup()
-    return {"status": "success", "message": "Phone number updated for 2FA."}
 
 @app.get("/api/auth/me")
 def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -527,7 +401,7 @@ def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_curre
 # --- Authentication API ---
 @app.post("/api/auth/login")
 async def login(form_data: UserLogin, db: Session = Depends(get_db)):
-    import random, logging
+    import logging
     logger = logging.getLogger("uvicorn.error")
     logger.warning(f"LOGIN ATTEMPT - Username: '{form_data.username}'")
     user = db.query(User).filter(User.username == form_data.username).first()
@@ -550,17 +424,7 @@ async def login(form_data: UserLogin, db: Session = Depends(get_db)):
     user.locked_until = None
     db.commit()
 
-    # If user has a phone number registered, trigger 2FA OTP
-    if user.phone_number:
-        otp = f"{random.randint(100000, 999999)}"
-        expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
-        LOGIN_OTP_STORE[user.username] = {"otp": otp, "expires_at": expires_at}
-        message = f"Your Sri Tirumala Rice Mill login code is: {otp}. Valid for 5 minutes. Do not share."
-        await SMSService.send_sms(user.phone_number, message)
-        print(f"[Login 2FA OTP] Sent to {user.phone_number} for user {user.username}: {otp}")
-        return {"otp_required": True, "username": user.username, "message": f"OTP sent to your registered number ending in {user.phone_number[-4:]}"}
-
-    # No 2FA configured — issue JWT directly
+    # Direct login - issue JWT directly
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer", "role": user.role, "full_name": user.full_name}
 
@@ -573,11 +437,24 @@ def get_tokens(db: Session = Depends(get_db)):
 
 @app.post("/api/tokens", response_model=TokenResponse)
 async def create_token(schema: UserCreate, db: Session = Depends(get_db)):
-    # Mock endpoint for admin token creation
-    # For actual client requests, webhooks or customer portal calls register_customer_token
-    from backend.routes.webhooks import register_customer_token
     token = await register_customer_token(db, schema.username, False, customer_name=schema.full_name) # Using username as phone mapping
     await broadcast_queue_update()
+    return token
+
+class CustomerTokenRegisterSchema(BaseModel):
+    phone_number: str
+    customer_name: Optional[str] = None
+
+@app.post("/api/tokens/register", response_model=TokenResponse)
+async def register_portal_token(schema: CustomerTokenRegisterSchema, db: Session = Depends(get_db)):
+    token = await register_customer_token(
+        db, 
+        schema.phone_number, 
+        priority=False, 
+        customer_name=schema.customer_name
+    )
+    if token is None:
+        raise HTTPException(status_code=400, detail="Closed today (holiday mode is active).")
     return token
 
 @app.post("/api/tokens/call-next", response_model=TokenResponse)
@@ -615,22 +492,6 @@ async def call_next_token(action: TokenCallNext, db: Session = Depends(get_db), 
     db.refresh(next_token)
     trigger_backup()
     
-    # Send NOW ACTIVE SMS
-    sms_text = SMSService.get_active_sms_text(next_token.token_number, action.counter)
-    await SMSService.send_sms(next_token.phone_number, sms_text)
-    
-    # Alert next token in line (Position = 2) that they are 2 Away
-    second_token = db.query(Token).filter(
-        Token.status == "waiting",
-        Token.created_at >= start_of_day
-    ).order_by(Token.priority.desc(), Token.created_at).first()
-    
-    if second_token:
-        # 2 Away Alert
-        sec_wait = calculate_estimated_wait_time(db, 2)
-        sec_sms = SMSService.get_2_away_sms_text(second_token.token_number, sec_wait)
-        await SMSService.send_sms(second_token.phone_number, sec_sms)
-        
     await broadcast_queue_update()
     return next_token
 
@@ -684,18 +545,6 @@ async def serve_token(token_id: int, sale_input: SaleCreate, db: Session = Depen
     db.refresh(token)
     trigger_backup()
     
-    # Send served SMS receipt
-    sms_text = SMSService.get_served_sms_text(token.token_number, total_bill)
-    await SMSService.send_sms(token.phone_number, sms_text)
-    
-    # Trigger low stock alert if below threshold
-    if stock.quantity_kg < stock.low_stock_threshold:
-        # In-app notifications are simulated, SMS is triggered
-        owner = db.query(User).filter(User.role == "owner").first()
-        alert_sms = SMSService.get_low_stock_sms_text(stock.variety_name, stock.quantity_kg, stock.low_stock_threshold)
-        # Simulate SMS to owner (we can mock any number for owner)
-        await SMSService.send_sms("+919999999999", alert_sms)
-        
     await broadcast_queue_update()
     return token
 
@@ -711,10 +560,6 @@ async def mark_no_show(token_id: int, db: Session = Depends(get_db), current_use
     db.commit()
     db.refresh(token)
     trigger_backup()
-    
-    # Send no-show SMS
-    sms_text = SMSService.get_noshow_sms_text(token.token_number)
-    await SMSService.send_sms(token.phone_number, sms_text)
     
     await broadcast_queue_update()
     return token
@@ -734,19 +579,6 @@ async def reactivate_token(token_id: int, db: Session = Depends(get_db), current
     db.commit()
     db.refresh(token)
     trigger_backup()
-    
-    # Re-calculate wait time
-    today = datetime.date.today()
-    start_of_day = datetime.datetime.combine(today, datetime.time.min)
-    ahead = db.query(Token).filter(
-        Token.status == "waiting",
-        Token.created_at >= start_of_day,
-        Token.created_at < token.created_at
-    ).count()
-    
-    wait = calculate_estimated_wait_time(db, ahead + 1)
-    sms_text = SMSService.get_token_sms_text(token.token_number, ahead, wait)
-    await SMSService.send_sms(token.phone_number, sms_text)
     
     await broadcast_queue_update()
     return token
@@ -1134,7 +966,6 @@ async def bulk_import_stock(
     }
 
 # Include routers
-app.include_router(webhook_router)
 
 # Health endpoint
 @app.get("/health")

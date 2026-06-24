@@ -152,39 +152,25 @@ export default function CustomerPortal({ backendUrl, language }) {
     const fullPhone = '+91' + phoneNumber;
 
     try {
-      const formData = new FormData();
-      formData.append('From', fullPhone);
-      const bodyText = customerName.trim() ? `TOKEN: ${customerName.trim()}` : 'TOKEN';
-      formData.append('Body', bodyText);
-
-      const res = await fetch(`${backendUrl}/api/webhooks/sms`, {
+      const res = await fetch(`${backendUrl}/api/tokens/register`, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: fullPhone,
+          customer_name: customerName.trim() || null
+        })
       });
 
       if (res.ok) {
-        setJustRegistered(true);
-        setLoading(false);
-        // Retry fetching token up to 5 times with increasing delays
-        const delays = [1200, 2000, 3000, 4000, 5000];
-        for (const delay of delays) {
-          await new Promise(r => setTimeout(r, delay));
-          const tokenRes = await fetch(`${backendUrl}/api/tokens`);
-          if (tokenRes.ok) {
-            const allTokens = await tokenRes.json();
-            const found = allTokens.find(
-              t => t.phone_number === fullPhone && ['waiting', 'active', 'no_show'].includes(t.status)
-            );
-            if (found) { setTokenInfo(found); setJustRegistered(false); return; }
-          }
-        }
-        setJustRegistered(false);
+        const tokenData = await res.json();
+        setTokenInfo(tokenData);
       } else {
-        setErrorMsg(language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.');
-        setLoading(false);
+        const err = await res.json();
+        setErrorMsg(err.detail || (language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.'));
       }
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
+    } finally {
       setLoading(false);
     }
   };

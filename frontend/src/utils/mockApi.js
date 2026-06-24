@@ -303,7 +303,7 @@ const setupMockApi = () => {
       }
 
       // 5. Token Endpoints
-      if (path === '/api/tokens') {
+      if (path === '/api/tokens' || path === '/api/tokens/register') {
         if (method === 'GET') {
           return makeResponse(getDB('ricemill_tokens'));
         }
