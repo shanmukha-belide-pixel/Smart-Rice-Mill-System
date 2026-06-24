@@ -83,8 +83,8 @@ Error generating stack: `+e.message+`
                         <head>
                           <title>Print Receipt</title>
                           <style>
-                            @page { margin: 0; size: 80mm auto; }
-                            body { font-family: monospace; margin: 0; padding: 15px; width: 75mm; color: black; background: white; font-size: 12px; }
+                            @page { margin: 0; size: 80mm 155mm; }
+                            body { font-family: monospace; margin: 0; padding: 12px; width: 80mm; height: 155mm; box-sizing: border-box; color: black; background: white; font-size: 12px; overflow: hidden; }
                             .flex { display: flex; }
                             .flex-col { display: flex; flex-direction: column; }
                             .justify-between { justify-content: space-between; }
