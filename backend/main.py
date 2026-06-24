@@ -264,18 +264,23 @@ def seed_users():
         db.query(User).filter(User.username.in_(["owner", "staff", "accountant"])).delete(synchronize_session=False)
         db.commit()
         
-        # Ensure Shanmukha is present
+        # Ensure Shanmukha is present and has the correct password hash
         shanmukha = db.query(User).filter(User.username == "Shanmukha").first()
+        expected_hash = hash_password("Shanmukha29*")
         if not shanmukha:
             new_user = User(
                 username="Shanmukha",
-                password_hash=hash_password("Shanmukha29*"),
+                password_hash=expected_hash,
                 role="owner",
                 full_name="Shanmukha"
             )
             db.add(new_user)
             db.commit()
             print("Successfully seeded owner user Shanmukha.")
+        elif shanmukha.password_hash != expected_hash:
+            shanmukha.password_hash = expected_hash
+            db.commit()
+            print("Successfully updated owner user Shanmukha password hash to match current salt.")
     except Exception as e:
         print(f"Error seeding Shanmukha: {e}")
         
