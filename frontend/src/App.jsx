@@ -41,9 +41,7 @@ export default function App() {
   const [syncedText, setSyncedText] = useState('Just now');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('language') || 'te';
-  });
+  const [language, setLanguage] = useState('te');
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
