@@ -470,7 +470,7 @@ export default function CustomerPortal({ backendUrl, language }) {
 
                 <div className="space-y-2 text-left max-w-xs mx-auto pb-2">
                   <label className="block text-[11px] font-semibold text-slate-400">
-                    {language === 'te' ? 'కస్టమర్ పేరు (ఐచ్ఛికం)' : 'Customer Name (Optional)'}
+                    {language === 'te' ? 'కస్టమర్ పేరు' : 'Customer Name'}
                   </label>
                   <input
                     type="text"
