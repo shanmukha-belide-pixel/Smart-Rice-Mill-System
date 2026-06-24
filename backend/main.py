@@ -257,15 +257,14 @@ def seed_users():
     asyncio.create_task(auto_skip_no_shows_loop())
     
     db = next(get_db())
+    
+    # 1. Seed Shanmukha owner user first
     try:
-        from services.cloud_sync import restore_db
-        restore_db(db)
-        # Ensure only the custom user Shanmukha exists
-        # 1. Delete all old default seeded users to avoid clutter
+        # Delete default users
         db.query(User).filter(User.username.in_(["owner", "staff", "accountant"])).delete(synchronize_session=False)
         db.commit()
         
-        # 2. Seed/Ensure Shanmukha is present
+        # Ensure Shanmukha is present
         shanmukha = db.query(User).filter(User.username == "Shanmukha").first()
         if not shanmukha:
             new_user = User(
@@ -277,7 +276,21 @@ def seed_users():
             db.add(new_user)
             db.commit()
             print("Successfully seeded owner user Shanmukha.")
-            
+    except Exception as e:
+        print(f"Error seeding Shanmukha: {e}")
+        
+    # 2. Try restoring from cloud bin
+    try:
+        try:
+            from backend.services.cloud_sync import restore_db
+        except ImportError:
+            from services.cloud_sync import restore_db
+        restore_db(db)
+    except Exception as e:
+        print(f"Error during restore_db: {e}")
+        
+    # 3. Seed default stock and sales
+    try:
         # Seed default stock varieties
         if db.query(Stock).count() == 0:
             basmati = Stock(
@@ -315,10 +328,8 @@ def seed_users():
             payment_modes = ["Cash", "UPI", "Card"]
             now = datetime.datetime.utcnow()
             
-            # We want to seed for the last 7 days
             for i in range(6, -1, -1):
                 target_date = now - datetime.timedelta(days=i)
-                # Seed 2 to 4 sales per day
                 num_sales = 3 if i == 0 else random.randint(2, 4)
                 for j in range(num_sales):
                     sale_time = target_date.replace(hour=4 + j*2 + random.randint(0, 1), minute=random.randint(0, 59))
@@ -340,7 +351,7 @@ def seed_users():
             trigger_backup()
             print("Successfully seeded historical sales data.")
     except Exception as e:
-        print(f"Error seeding DB: {e}")
+        print(f"Error seeding stock/sales: {e}")
     finally:
         db.close()
 

@@ -5,7 +5,7 @@ import Reports from './pages/Reports';
 import PublicDisplay from './pages/PublicDisplay';
 import CustomerPortal from './pages/CustomerPortal';
 import SettingsPage from './pages/Settings';
-import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings, Sun, Moon } from 'lucide-react';
+import { LogOut, ShieldAlert, Sparkles, Languages, Ticket, Package, BarChart3, Bell, BellOff, Volume2, VolumeX, CheckCircle, AlertCircle, AlertTriangle, Info, Maximize2, Minimize2, Settings, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { translations } from './utils/translations';
 import { subscribeToDatabase, subscribeToConnection, getDbState, updateSmsInbox } from './utils/firebaseService';
 
@@ -28,6 +28,7 @@ export default function App() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
 
 
@@ -415,13 +416,13 @@ export default function App() {
       if (detail.toLowerCase().includes("invalid username or password")) {
         return "వినియోగదారు పేరు లేదా పాస్‌వర్డ్ సరైనది కాదు.";
       }
-      if (detail.toLowerCase().includes("locked due to failed attempts")) {
+      if (detail.toLowerCase().includes("account temporarily locked")) {
         const match = detail.match(/\d+/);
         const mins = match ? match[0] : '30';
-        return `విఫల ప్రయత్నాల కారణంగా ఖాతా తాత్కాలికంగా లాక్ చేయబడింది. ${mins} నిమిషం(ల) తర్వాత మళ్లీ ప్రయత్నించండి.`;
+        return `ఖాతా తాత్కాలికంగా లాక్ చేయబడింది. దయచేసి ${mins} నిమిషం(ల) తర్వాత మళ్లీ ప్రయత్నించండి.`;
       }
-      if (detail.toLowerCase().includes("too many failed login attempts")) {
-        return "చాలా విఫల లాగిన్ ప్రయత్నాలు జరిగాయి. ఖాతా 30 నిమిషాల పాటు లాక్ చేయబడింది.";
+      if (detail.toLowerCase().includes("too many failed attempts") || detail.toLowerCase().includes("too many failed login attempts")) {
+        return "చాలా విఫల ప్రయత్నాలు జరిగాయి. ఖాతా 30 నిమిషాల పాటు లాక్ చేయబడింది.";
       }
       if (detail.toLowerCase().includes("could not connect") || detail.toLowerCase().includes("failed to connect")) {
         return "బ్యాకెండ్ సర్వర్‌కి కనెక్ట్ కాలేదు. API రన్ అవుతుందో లేదో తనిఖీ చేయండి.";
@@ -642,12 +643,21 @@ export default function App() {
                     <label className="block text-xs font-semibold text-slate-400">
                       {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
                     </label>
-                    <input
-                      type="password" required placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
-                      value={loginForm.password}
-                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"} required placeholder="••••••••"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer flex items-center justify-center p-1"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <button type="submit" disabled={loading}
                     className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
