@@ -1145,3 +1145,27 @@ def health():
 def debug_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return [{"username": u.username, "role": u.role, "password_hash": u.password_hash} for u in users]
+
+@app.get("/api/auth/force-seed-users")
+def force_seed_users(db: Session = Depends(get_db)):
+    try:
+        db.query(User).filter(User.username.in_(["owner", "staff", "accountant"])).delete(synchronize_session=False)
+        db.commit()
+        shanmukha = db.query(User).filter(User.username == "Shanmukha").first()
+        if not shanmukha:
+            new_user = User(
+                username="Shanmukha",
+                password_hash=hash_password("Shanmukha29*"),
+                role="owner",
+                full_name="Shanmukha"
+            )
+            db.add(new_user)
+            db.commit()
+            return {"status": "success", "message": "Seeded Shanmukha from scratch."}
+        else:
+            shanmukha.password_hash = hash_password("Shanmukha29*")
+            shanmukha.role = "owner"
+            db.commit()
+            return {"status": "success", "message": "Updated Shanmukha password."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
