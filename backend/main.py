@@ -1140,3 +1140,8 @@ app.include_router(webhook_router)
 @app.get("/health")
 def health():
     return {"status": "healthy", "timestamp": datetime_now_str()}
+
+@app.get("/api/auth/debug-users")
+def debug_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return [{"username": u.username, "role": u.role, "password_hash": u.password_hash} for u in users]
