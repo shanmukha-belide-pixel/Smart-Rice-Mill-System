@@ -419,8 +419,16 @@ def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_curre
 async def login(form_data: UserLogin, db: Session = Depends(get_db)):
     import logging
     logger = logging.getLogger("uvicorn.error")
-    logger.warning(f"LOGIN ATTEMPT - Username: '{form_data.username}'")
-    user = db.query(User).filter(User.username == form_data.username).first()
+    
+    username_input = form_data.username.strip()
+    # Support English case-insensitive and Telugu spellings of Shanmukha
+    if username_input.lower() == "shanmukha" or username_input in ["షణ్ముఖ", "షణ్ముఖా", "షణ్ముఖ్", "షణ్ముఖుడు"]:
+        username = "Shanmukha"
+    else:
+        username = username_input
+        
+    logger.warning(f"LOGIN ATTEMPT - Username: '{form_data.username}' (Normalized: '{username}')")
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid username or password.")
     if user.locked_until and user.locked_until > datetime.datetime.utcnow():
