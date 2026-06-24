@@ -653,9 +653,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-amber-500 cursor-pointer flex items-center justify-center p-1"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-amber-500 cursor-pointer flex items-center justify-center p-1 z-10"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
                       </button>
                     </div>
                   </div>
