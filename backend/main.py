@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
 # Load environment variables from backend/.env
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
