@@ -31,11 +31,18 @@ Base.metadata.create_all(bind=engine)
 def run_migrations():
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
+    
     columns = [col['name'] for col in inspector.get_columns('tokens')]
     if 'customer_name' not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE tokens ADD COLUMN customer_name TEXT"))
             print("Migration: Added customer_name column to tokens table.")
+            
+    user_columns = [col['name'] for col in inspector.get_columns('users')]
+    if 'phone_number' not in user_columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_number TEXT"))
+            print("Migration: Added phone_number column to users table.")
 
 try:
     run_migrations()
@@ -695,15 +702,26 @@ def update_stock(stock_id: int, update: StockUpdate, db: Session = Depends(get_d
 def get_daily_report(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     check_role(current_user, ["owner", "accountant"])
     
-    today = datetime.date.today()
-    start_of_day = datetime.datetime.combine(today, datetime.time.min)
+    # Calculate today's boundaries in IST, converted to UTC
+    now_utc = datetime.datetime.utcnow()
+    now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
+    today_ist = now_ist.date()
     
-    tokens = db.query(Token).filter(Token.created_at >= start_of_day).all()
+    start_of_day = datetime.datetime.combine(today_ist, datetime.time.min) - datetime.timedelta(hours=5, minutes=30)
+    end_of_day = datetime.datetime.combine(today_ist, datetime.time.max) - datetime.timedelta(hours=5, minutes=30)
+    
+    tokens = db.query(Token).filter(
+        Token.created_at >= start_of_day,
+        Token.created_at <= end_of_day
+    ).all()
     served = len([t for t in tokens if t.status == "served"])
     no_shows = len([t for t in tokens if t.status == "no_show"])
     no_show_rate = (no_shows / len(tokens) * 100.0) if tokens else 0.0
     
-    sales = db.query(Sale).filter(Sale.created_at >= start_of_day).all()
+    sales = db.query(Sale).filter(
+        Sale.created_at >= start_of_day,
+        Sale.created_at <= end_of_day
+    ).all()
     total_rev = sum(s.total_price for s in sales)
     
     payment_split = {"Cash": 0.0, "UPI": 0.0, "Credit": 0.0}
@@ -714,20 +732,31 @@ def get_daily_report(db: Session = Depends(get_db), current_user: User = Depends
     for s in sales:
         stock_split[s.variety_name] = stock_split.get(s.variety_name, 0.0) + s.quantity_kg
         
+    # Calculate average service time (in minutes) from today's sales
+    settings = db.query(SystemSetting).first()
+    default_service_time = settings.avg_service_time if settings else 8.0
+    
+    avg_service_time = default_service_time
+    if sales:
+        valid_times = [s.service_time_seconds for s in sales if s.service_time_seconds > 0]
+        if valid_times:
+            avg_service_time = (sum(valid_times) / len(valid_times)) / 60.0
+            
     return {
-        "date": today.strftime("%d-%b-%Y"),
+        "date": today_ist.strftime("%d-%b-%Y"),
         "tokens_served": served,
         "no_shows": no_shows,
         "no_show_rate": no_show_rate,
         "total_revenue": total_rev,
         "payment_breakdown": payment_split,
-        "stock_consumed": stock_split
+        "stock_consumed": stock_split,
+        "avg_service_time": round(avg_service_time, 1)
     }
 
 @app.get("/api/reports/customer-sales")
 def get_customer_sales(date: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
-    Returns all customer sale records for a given date (default: today).
+    Returns all customer sale records for a given date (default: today in IST).
     Each record contains: token number, customer name, phone number,
     rice variety, quantity kg, total amount, payment mode, time.
     Used for Excel export.
@@ -738,12 +767,16 @@ def get_customer_sales(date: str = None, db: Session = Depends(get_db), current_
         try:
             target_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         except ValueError:
-            target_date = datetime.date.today()
+            now_utc = datetime.datetime.utcnow()
+            now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
+            target_date = now_ist.date()
     else:
-        target_date = datetime.date.today()
+        now_utc = datetime.datetime.utcnow()
+        now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
+        target_date = now_ist.date()
     
-    start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
-    end_of_day = datetime.datetime.combine(target_date, datetime.time.max)
+    start_of_day = datetime.datetime.combine(target_date, datetime.time.min) - datetime.timedelta(hours=5, minutes=30)
+    end_of_day = datetime.datetime.combine(target_date, datetime.time.max) - datetime.timedelta(hours=5, minutes=30)
     
     # Join sales with tokens to get phone number and customer name
     sales = db.query(Sale).filter(
@@ -780,12 +813,12 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
     sales_count = db.query(Sale).count()
     
     if sales_count > 0:
-        # Group by date (ignoring time) and sum total_price
+        # Group by date (ignoring time) and sum total_price (timezone converted to IST)
         daily_sales = db.query(
-            func.date(Sale.created_at).label("sales_date"),
+            func.date(Sale.created_at, '+5 hours', '30 minutes').label("sales_date"),
             func.sum(Sale.total_price).label("revenue"),
             func.count(Sale.id).label("tokens")
-        ).group_by(func.date(Sale.created_at)).order_by(func.date(Sale.created_at).desc()).limit(7).all()
+        ).group_by(func.date(Sale.created_at, '+5 hours', '30 minutes')).order_by(func.date(Sale.created_at, '+5 hours', '30 minutes').desc()).limit(7).all()
         
         # Format the result. The database query returns them in desc order, we want asc chronological order
         weekly_revenue = []
@@ -802,11 +835,11 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
                 "tokens": int(row.tokens or 0)
             })
             
-        # Aggregate peak hours dynamically from real sales
+        # Aggregate peak hours dynamically from real sales (timezone converted to IST)
         hour_sales = db.query(
-            func.strftime("%H", Sale.created_at).label("hour"),
+            func.strftime("%H", Sale.created_at, '+5 hours', '30 minutes').label("hour"),
             func.count(Sale.id).label("count")
-        ).group_by(func.strftime("%H", Sale.created_at)).all()
+        ).group_by(func.strftime("%H", Sale.created_at, '+5 hours', '30 minutes')).all()
         
         # Map hourly counts to standard time blocks
         time_blocks = {

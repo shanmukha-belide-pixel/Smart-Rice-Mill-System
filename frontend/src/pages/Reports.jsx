@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
-import { Calendar, IndianRupee, Users, ShoppingBag, Download, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { Calendar, IndianRupee, Users, ShoppingBag, Download, ArrowUpRight, TrendingUp, Clock } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function Reports({ backendUrl, userToken, language }) {
@@ -435,7 +435,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       </div>
 
       {/* Daily Highlights Summary Box */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Rev */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
@@ -475,6 +475,22 @@ export default function Reports({ backendUrl, userToken, language }) {
           </div>
           <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/10">
             <Users className="w-6 h-6 text-blue-400 stroke-1" />
+          </div>
+        </div>
+
+        {/* Avg Service Time */}
+        <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
+          <div className="space-y-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.avgServiceTime}</span>
+            <h3 className="text-2xl font-extrabold text-slate-100 font-mono">
+              {dailyData.avg_service_time !== undefined ? dailyData.avg_service_time : 8.0} {language === 'te' ? 'నిమి' : 'mins'}
+            </h3>
+            <span className="text-[9px] text-emerald-400 font-semibold">
+              {language === 'te' ? 'సగటు చెక్అవుట్ సమయం' : 'Per checkout processing'}
+            </span>
+          </div>
+          <div className="p-3 bg-teal-500/10 rounded-xl border border-teal-500/10">
+            <Clock className="w-6 h-6 text-teal-400 stroke-1" />
           </div>
         </div>
 

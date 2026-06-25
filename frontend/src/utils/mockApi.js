@@ -534,6 +534,17 @@ const setupMockApi = () => {
           paymentBreakdown[mode] = (paymentBreakdown[mode] || 0) + amt;
         });
 
+        const settingsList = getDB('ricemill_settings') || [];
+        const settings = settingsList[0];
+        const defaultServiceTime = settings ? settings.avg_service_time : 8.0;
+        let avgServiceTime = defaultServiceTime;
+        if (todaySales.length > 0) {
+          const validTimes = todaySales.map(s => s.service_time_seconds || 0).filter(t => t > 0);
+          if (validTimes.length > 0) {
+            avgServiceTime = (validTimes.reduce((sum, t) => sum + t, 0) / validTimes.length) / 60.0;
+          }
+        }
+
         return makeResponse({
           date: new Date().toLocaleDateString('en-IN'),
           tokens_served: served,
@@ -541,7 +552,8 @@ const setupMockApi = () => {
           no_show_rate: todayTokens.length ? (noShows / todayTokens.length * 100) : 0.0,
           total_revenue: totalRevenue,
           payment_breakdown: paymentBreakdown,
-          stock_consumed: stockConsumed
+          stock_consumed: stockConsumed,
+          avg_service_time: parseFloat(avgServiceTime.toFixed(1))
         });
       }
 

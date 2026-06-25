@@ -114,6 +114,7 @@ class DailyReportResponse(BaseModel):
     total_revenue: float
     payment_breakdown: dict # e.g. {"Cash": 100, "UPI": 200, "Credit": 50}
     stock_consumed: dict # e.g. {"Basmati": 50, "Sona Masuri": 100}
+    avg_service_time: float
 
 class CustomerSaleRecord(BaseModel):
     sno: int

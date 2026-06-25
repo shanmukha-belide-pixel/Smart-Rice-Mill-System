@@ -127,13 +127,7 @@ def restore_db(db: Session):
         sales_count = db.query(Sale).count()
         tokens_count = db.query(Token).count()
         
-        is_empty = (sales_count == 0 and tokens_count == 0)
-        
-        if not is_empty:
-            print("[Cloud Sync] Local database already contains data. Skipping cloud restore.")
-            return
-            
-        print("[Cloud Sync] Fetching database backup from cloud...")
+        print("[Cloud Sync] Fetching database backup from cloud to check sync status...")
         req = urllib.request.Request(
             f"{MOCK_BIN_URL}?nocache={int(datetime.datetime.utcnow().timestamp())}",
             headers={"User-Agent": "Mozilla/5.0"}
@@ -159,6 +153,17 @@ def restore_db(db: Session):
             tokens_data = state.get("tokens", [])
             if not sales_data and not tokens_data:
                 print("[Cloud Sync] Cloud backup has no records. Skipping restore.")
+                return
+                
+            # Perform restore if local db is empty, OR
+            # local has only default seeded historical sales (typically 10 sales, 0 tokens) and cloud has data, OR
+            # cloud contains more sales than local
+            is_empty = (sales_count == 0 and tokens_count == 0)
+            has_only_seeded = (tokens_count == 0 and sales_count > 0 and len(tokens_data) > 0)
+            cloud_has_more = (len(sales_data) > sales_count)
+            
+            if not (is_empty or has_only_seeded or cloud_has_more):
+                print("[Cloud Sync] Local database contains up-to-date user data. Skipping cloud restore.")
                 return
                 
             print(f"[Cloud Sync] Restoring {len(tokens_data)} tokens and {len(sales_data)} sales...")
