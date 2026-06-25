@@ -1031,7 +1031,11 @@ async def bulk_import_stock(
 
 # Include routers
 
-# Health endpoint
+# Health & Root endpoints
+@app.get("/")
+def read_root():
+    return {"message": "Sri Tirumala Rice Mill API is running! Visit /docs for documentation.", "status": "healthy"}
+
 @app.get("/health")
 def health():
     return {"status": "healthy", "timestamp": datetime_now_str()}
