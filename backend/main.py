@@ -495,6 +495,59 @@ async def register_portal_token(schema: CustomerTokenRegisterSchema, db: Session
         raise HTTPException(status_code=400, detail="Closed today (holiday mode is active).")
     return token
 
+@app.get("/api/tokens/lookup/{token_number}")
+def lookup_token_by_number(token_number: str, db: Session = Depends(get_db)):
+    """
+    Public (no-auth) endpoint: look up a single token by its number (e.g. T-001).
+    Returns only public-safe fields — phone number is never exposed.
+    """
+    today = datetime.date.today()
+    start_of_day = datetime.datetime.combine(today, datetime.time.min)
+
+    # Accept both "T-001" and "1" or "001"
+    search = token_number.strip().upper()
+    if not search.startswith("T-"):
+        try:
+            n = int(search)
+            search = f"T-{n:03d}"
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Token not found.")
+
+    token = db.query(Token).filter(
+        Token.token_number == search,
+        Token.created_at >= start_of_day
+    ).first()
+
+    if not token:
+        raise HTTPException(status_code=404, detail=f"Token {search} not found for today.")
+
+    # Calculate queue position (how many waiting tokens are ahead)
+    queue_position = None
+    if token.status == "waiting":
+        queue_position = db.query(Token).filter(
+            Token.status == "waiting",
+            Token.created_at >= start_of_day,
+            Token.created_at < token.created_at
+        ).count() + 1
+
+    # Estimate wait time
+    est_wait = calculate_estimated_wait_time(db, queue_position) if queue_position else 0
+
+    return {
+        "token_number": token.token_number,
+        "customer_name": token.customer_name or "Customer",
+        "phone_number": token.phone_number,
+        "status": token.status,
+        "queue_position": queue_position,
+        "estimated_wait_minutes": est_wait,
+        "counter_assigned": token.counter_assigned,
+        "priority": token.priority,
+        "created_at": token.created_at.isoformat() if token.created_at else None,
+        "called_at": token.called_at.isoformat() if token.called_at else None,
+        "served_at": token.served_at.isoformat() if token.served_at else None,
+    }
+
+
 @app.post("/api/tokens/call-next", response_model=TokenResponse)
 async def call_next_token(action: TokenCallNext, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     check_role(current_user, ["owner", "staff"])

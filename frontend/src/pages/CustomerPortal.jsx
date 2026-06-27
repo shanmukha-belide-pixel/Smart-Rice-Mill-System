@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, Mail, Users, Clock, ArrowRight, UserCheck, RefreshCw, Key, Volume2, VolumeX } from 'lucide-react';
+import { Users, Clock, RefreshCw, Volume2, VolumeX, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function CustomerPortal({ backendUrl, language }) {
-  const [phoneNumber, setPhoneNumber] = useState(() => localStorage.getItem('cp_phone') || '');
-  const [customerName, setCustomerName] = useState(() => localStorage.getItem('cp_name') || '');
+  const [tokenNumber, setTokenNumber] = useState(() => localStorage.getItem('cp_token_number') || '');
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
-  const [queueInfo, setQueueInfo] = useState(null);
-  const [justRegistered, setJustRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [initialChecked, setInitialChecked] = useState(false);
@@ -18,7 +15,7 @@ export default function CustomerPortal({ backendUrl, language }) {
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem('cp_sound') !== 'false'; // default to true
   });
-  const prevTokenStateRef = useRef({ id: null, status: null });
+  const prevTokenStateRef = useRef({ token_number: null, status: null });
 
   const t = translations[language || 'te'];
 
@@ -60,19 +57,19 @@ export default function CustomerPortal({ backendUrl, language }) {
   // Monitor token state changes to play voice notifications
   useEffect(() => {
     if (!tokenInfo) {
-      prevTokenStateRef.current = { id: null, status: null };
+      prevTokenStateRef.current = { token_number: null, status: null };
       return;
     }
     
     const prev = prevTokenStateRef.current;
     
-    // Case 1: Newly registered or loaded token
-    if (prev.id !== tokenInfo.id) {
-      prevTokenStateRef.current = { id: tokenInfo.id, status: tokenInfo.status };
+    // Case 1: Newly loaded token
+    if (prev.token_number !== tokenInfo.token_number) {
+      prevTokenStateRef.current = { token_number: tokenInfo.token_number, status: tokenInfo.status };
       
       const cleanTokenNum = tokenInfo.token_number.replace('-', ' ');
-      const textTe = `మీ టోకెన్ విజయవంతంగా నమోదు చేయబడింది. మీ టోకెన్ నంబర్ ${cleanTokenNum}.`;
-      const textEn = `Your token has been registered successfully. Your token number is ${tokenInfo.token_number}.`;
+      const textTe = `మీ టోకెన్ విజయవంతంగా గుర్తించబడింది. మీ టోకెన్ నంబర్ ${cleanTokenNum}.`;
+      const textEn = `Your token has been found. Your token number is ${tokenInfo.token_number}.`;
       announceText(textTe, textEn);
       return;
     }
@@ -90,53 +87,45 @@ export default function CustomerPortal({ backendUrl, language }) {
     prevTokenStateRef.current.status = tokenInfo.status;
   }, [tokenInfo, soundEnabled, isSpeechSupported, language]);
 
-  // Fetch token status for the logged-in phone number
-  const checkStatus = async (overridePhone) => {
-    const phone = overridePhone || phoneNumber;
-    if (!phone) return;
+  // Fetch token status for the token number
+  const checkStatus = async (overrideToken) => {
+    const target = overrideToken || tokenNumber;
+    if (!target) return;
     setLoading(true);
     setErrorMsg('');
-    const fullPhone = '+91' + phone;
     try {
-      // Query backend for active token details
-      const tokenRes = await fetch(`${backendUrl}/api/tokens`);
-      if (tokenRes.ok) {
-        const allTokens = await tokenRes.json();
-        const activeToken = allTokens.find(
-          t => t.phone_number === fullPhone && ['waiting', 'active', 'no_show'].includes(t.status)
-        );
-        
-        if (activeToken) {
-          setTokenInfo(activeToken);
-        } else {
-          setTokenInfo(null);
-        }
+      // Query backend for specific token lookup
+      const lookupRes = await fetch(`${backendUrl}/api/tokens/lookup/${target}`);
+      if (lookupRes.ok) {
+        const data = await lookupRes.json();
+        setTokenInfo(data);
+        setIsVerified(true);
       } else {
-        setErrorMsg(language === 'te' ? 'క్యూ తనిఖీ చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error checking queue. Try again.');
+        const err = await lookupRes.json();
+        setErrorMsg(err.detail || (language === 'te' ? 'టోకెన్ కనుగొనబడలేదు. దయచేసి సరైన నంబర్ ఇవ్వండి.' : 'Token not found. Please verify token number.'));
+        setTokenInfo(null);
       }
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్‌ని సంప్రదించలేకపోయింది.' : 'Failed to reach server.');
+      setTokenInfo(null);
     } finally {
       setLoading(false);
       setInitialChecked(true);
     }
   };
 
-  // Access portal: save to localStorage for persistence across reloads
-  const handleAccessPortal = async (e) => {
+  // Track Token submit action
+  const handleTrackToken = async (e) => {
     if (e) e.preventDefault();
-    if (!phoneNumber || phoneNumber.length !== 10) {
-      setErrorMsg(language === 'te' ? 'దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit mobile number.');
+    if (!tokenNumber.trim()) {
+      setErrorMsg(language === 'te' ? 'దయచేసి టోకెన్ నంబర్ నమోదు చేయండి.' : 'Please enter a token number.');
       return;
     }
     setLoading(true);
     setErrorMsg('');
     try {
-      localStorage.setItem('cp_phone', phoneNumber);
-      localStorage.setItem('cp_name', customerName.trim());
-      setIsVerified(true);
-      setInitialChecked(false);
-      await checkStatus(phoneNumber);
+      localStorage.setItem('cp_token_number', tokenNumber.trim());
+      await checkStatus(tokenNumber.trim());
     } catch (err) {
       setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
     } finally {
@@ -144,92 +133,26 @@ export default function CustomerPortal({ backendUrl, language }) {
     }
   };
 
-  // One-click register token after successful login
-  const handleRegisterToken = async (e) => {
-    if (e) e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-    const fullPhone = '+91' + phoneNumber;
-
-    try {
-      const res = await fetch(`${backendUrl}/api/tokens/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone_number: fullPhone,
-          customer_name: customerName.trim() || null
-        })
-      });
-
-      if (res.ok) {
-        const tokenData = await res.json();
-        setTokenInfo(tokenData);
-      } else {
-        const err = await res.json();
-        setErrorMsg(err.detail || (language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.'));
-      }
-    } catch (err) {
-      setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch live queue stats to show on registration screen
-  const fetchQueueInfo = async () => {
-    try {
-      const res = await fetch(`${backendUrl}/api/tokens`);
-      if (res.ok) {
-        const allTokens = await res.json();
-        const waiting = allTokens.filter(t => t.status === 'waiting');
-        const active = allTokens.filter(t => t.status === 'active');
-        const tokenNums = allTokens.map(t => {
-          if (!t.token_number) return 0;
-          const match = t.token_number.match(/\d+/);
-          return match ? parseInt(match[0], 10) : 0;
-        });
-        const maxToken = tokenNums.length > 0 ? Math.max(...tokenNums) : 0;
-        setQueueInfo({
-          waitingCount: waiting.length,
-          activeCount: active.length,
-          nextToken: maxToken + 1,
-          estimatedWait: waiting.length * 5,
-        });
-      }
-    } catch (err) {
-      // silent fail
-    }
-  };
-
-  // On mount: if phone saved in localStorage, auto-restore session
+  // On mount: if token number saved in localStorage, auto-restore session
   useEffect(() => {
-    const savedPhone = localStorage.getItem('cp_phone');
-    if (savedPhone && savedPhone.length === 10) {
+    const savedToken = localStorage.getItem('cp_token_number');
+    if (savedToken) {
       setIsVerified(true);
-      checkStatus(savedPhone);
+      checkStatus(savedToken);
     }
-    fetchQueueInfo();
   }, []);
 
-  // Auto-refresh token status every 15s when logged in
+  // Auto-refresh token status every 15s when active
   useEffect(() => {
-    if (!isVerified || !phoneNumber) return;
-    const interval = setInterval(() => checkStatus(phoneNumber), 15000);
+    if (!isVerified || !tokenNumber) return;
+    const interval = setInterval(() => checkStatus(tokenNumber), 15000);
     return () => clearInterval(interval);
-  }, [isVerified, phoneNumber]);
-
-  // Refresh queue info every 20s when on registration screen
-  useEffect(() => {
-    if (!isVerified || tokenInfo) return;
-    fetchQueueInfo();
-    const interval = setInterval(fetchQueueInfo, 20000);
-    return () => clearInterval(interval);
-  }, [isVerified, tokenInfo]);
+  }, [isVerified, tokenNumber]);
 
   return (
-    <div className="max-w-md mx-auto min-h-[500px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
+    <div className="max-w-md mx-auto min-h-[480px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
       {/* Decorative gradient overlay */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-850 pb-4 mb-4">
@@ -277,253 +200,153 @@ export default function CustomerPortal({ backendUrl, language }) {
 
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center py-4">
-        {!isVerified ? (
-          /* Mobile Number Login Screen */
-          <form onSubmit={handleAccessPortal} className="space-y-5 animate-fade-in">
-            <div className="text-center space-y-1 pb-2">
-              <h3 className="text-lg font-bold text-slate-200">{t.registerOrCheckToken}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{t.portalDesc}</p>
+        {!isVerified || !tokenInfo ? (
+          /* Token Search Screen */
+          <form onSubmit={handleTrackToken} className="space-y-5 animate-fade-in">
+            <div className="text-center space-y-1.5 pb-2">
+              <h3 className="text-lg font-bold text-slate-200">
+                {language === 'te' ? 'మీ టోకెన్ ట్రాక్ చేయండి' : 'Track Your Token'}
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {language === 'te' 
+                  ? 'కౌంటర్ వద్ద పొందిన టోకెన్ నంబర్ నమోదు చేసి లైవ్ స్థితిని చూడండి.' 
+                  : 'Enter the token number received at the counter to view live status.'}
+              </p>
             </div>
 
             {errorMsg && (
-              <div className="bg-rose-955/40 border border-rose-900/20 text-rose-400 p-3 rounded-xl text-xs text-center font-medium">
+              <div className="bg-rose-955/40 border border-rose-900/20 text-rose-455 p-3 rounded-xl text-xs text-center font-medium">
                 {errorMsg}
               </div>
             )}
 
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-400">
-                {language === 'te' ? 'మీ పేరు' : 'Your Name'}
+                {language === 'te' ? 'టోకెన్ నంబర్' : 'Token Number'}
               </label>
-              <input
-                type="text"
-                placeholder={language === 'te' ? 'ఉదా: రామయ్య' : 'e.g. Ramaiah'}
-                className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400">{t.enterMobile}</label>
               <div className="relative">
-                <span className="absolute left-4 top-3.5 text-xs text-slate-500 font-mono">+91</span>
-                <input type="tel" required placeholder="9876543210" pattern="[0-9]{10}"
-                  className="w-full bg-slate-950 border border-slate-850 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono"
-                  value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                <input
+                  type="text"
+                  required
+                  placeholder={language === 'te' ? 'ఉదా: T-005 లేదా 5' : 'e.g. T-005 or 5'}
+                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono tracking-widest uppercase"
+                  value={tokenNumber}
+                  onChange={(e) => setTokenNumber(e.target.value)}
+                />
               </div>
             </div>
 
             <button type="submit" disabled={loading}
               className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 py-3.5 rounded-xl text-xs font-extrabold transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider">
-              {loading ? (language === 'te' ? 'యాక్సెస్ చేస్తోంది...' : 'Accessing...') : (language === 'te' ? 'పోర్టల్ ప్రవేశించు' : 'Access Portal')}
-              <ArrowRight className="w-4 h-4" />
+              <Search className="w-4 h-4" />
+              {loading ? (language === 'te' ? 'శోధిస్తోంది...' : 'Searching...') : (language === 'te' ? 'ట్రాక్ చేయండి' : 'Track Token')}
             </button>
           </form>
         ) : (
-          /* Verified Views: Show ticket info if registered, or register option if new client */
-          <div className="space-y-6 animate-fade-in">
-            {!initialChecked ? (
-              /* Loading screen during initial check */
-              <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs text-slate-500 font-semibold">
-                  {language === 'te' ? 'క్యూ స్థితిని తనిఖీ చేస్తున్నాము...' : 'Checking queue status...'}
+          /* Live Ticket view */
+          <div className="space-y-5 text-center animate-fade-in">
+            <div className="space-y-2">
+              {tokenInfo.customer_name && (
+                <p className="text-[11px] text-amber-450 font-bold tracking-wide">
+                  👋 {language === 'te' ? 'నమస్కారం,' : 'Hello,'} {tokenInfo.customer_name}
                 </p>
+              )}
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-extrabold font-mono">
+                {language === 'te' ? 'మీ యాక్టివ్ టోకెన్' : 'Your Active Token'}
+              </span>
+              <div className="text-5xl font-black text-slate-200 font-mono bg-slate-950 py-5 border border-slate-850 rounded-2xl tracking-wide select-none shadow-inner">
+                {tokenInfo.token_number}
               </div>
-            ) : justRegistered ? (
-              /* Registration Success — waiting for token confirmation */
-              <div className="flex flex-col items-center justify-center py-10 space-y-5 text-center animate-fade-in">
-                <div className="relative w-20 h-20">
-                  <svg className="w-20 h-20 animate-spin text-emerald-500/30" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="56 170" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl">🎫</span>
+            </div>
+
+            {/* Queue status descriptors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-955/60 p-3.5 rounded-2xl border border-slate-850/60 flex items-center justify-between text-left">
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">
+                    {language === 'te' ? 'క్యూ స్థితి' : 'Queue Status'}
+                  </span>
+                  <div className="text-xs font-bold text-slate-350 capitalize mt-1">
+                    {tokenInfo.status === 'active' ? t.activeCounter : 
+                     tokenInfo.status === 'no_show' ? t.markNoShow : 
+                     tokenInfo.status === 'served' ? (language === 'te' ? 'పూర్తయింది' : 'Served') : t.waiting}
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-extrabold text-emerald-400">
-                    {language === 'te' ? 'టోకెన్ నమోదు అవుతోంది...' : 'Registering your token...'}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 leading-relaxed max-w-[220px] mx-auto">
-                    {language === 'te'
-                      ? 'దయచేసి వేచి ఉండండి. మీ టోకెన్ నంబర్ కొద్ది సేపట్లో వస్తుంది.'
-                      : 'Please wait. Your token number will appear in a moment.'}
-                  </p>
-                </div>
-                <div className="flex gap-1.5">
-                  {[0, 1, 2].map(i => (
-                    <span key={i} className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                  ))}
-                </div>
+                <Users className="w-5 h-5 text-emerald-500 stroke-1" />
               </div>
-            ) : tokenInfo ? (
-              /* Live Ticket view */
-              <div className="space-y-5 text-center">
-              <div className="space-y-2">
-                  {(tokenInfo.customer_name || customerName) && (
-                    <p className="text-[11px] text-amber-400 font-bold tracking-wide">
-                      👋 {language === 'te' ? 'నమస్కారం,' : 'Hello,'} {tokenInfo.customer_name || customerName}
-                    </p>
-                  )}
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-extrabold font-mono">{t.yourActiveTicket}</span>
-                  <div className="text-5xl font-black text-slate-200 font-mono bg-slate-950 py-5 border border-slate-850 rounded-2xl tracking-wide select-none shadow-inner">
-                    {tokenInfo.token_number}
+
+              <div className="bg-slate-955/60 p-3.5 rounded-2xl border border-slate-855/60 flex items-center justify-between text-left">
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">
+                    {tokenInfo.status === 'waiting' ? (language === 'te' ? 'స్థానం' : 'Position') : t.estimatedWait}
+                  </span>
+                  <div className="text-xs font-bold text-slate-350 mt-1">
+                    {tokenInfo.status === 'waiting' 
+                      ? `${language === 'te' ? '#' : 'No. '}${tokenInfo.queue_position || 1}`
+                      : tokenInfo.status === 'served' ? '-' : `~${tokenInfo.estimated_wait_minutes || 0} ${language === 'te' ? 'ని.' : 'mins'}`}
                   </div>
                 </div>
-
-                {/* Queue status descriptors */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-850/60 flex items-center justify-between text-left">
-                    <div>
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">{language === 'te' ? 'క్యూ స్థితి' : 'Queue status'}</span>
-                      <div className="text-xs font-bold text-slate-350 capitalize mt-1">
-                        {tokenInfo.status === 'active' ? t.activeCounter : 
-                         tokenInfo.status === 'no_show' ? t.markNoShow : t.waiting}
-                      </div>
-                    </div>
-                    <Users className="w-5 h-5 text-emerald-500 stroke-1" />
-                  </div>
-
-                  <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-850/60 flex items-center justify-between text-left">
-                    <div>
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">{t.estimatedWait}</span>
-                      <div className="text-xs font-bold text-slate-350 mt-1">~{tokenInfo.wait_time_minutes} {language === 'te' ? 'ని.' : 'mins'}</div>
-                    </div>
-                    <Clock className="w-5 h-5 text-amber-500 stroke-1" />
-                  </div>
-                </div>
-
-                {/* Status messages depending on state */}
-                <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4 text-xs text-slate-400 font-semibold leading-relaxed">
-                  {tokenInfo.status === 'active' ? (
-                    <span className="text-emerald-400 font-bold block animate-pulse">
-                      📍 {t.activeWaitStatus.replace('counter', tokenInfo.counter_assigned || 'Counter 1')}
-                    </span>
-                  ) : tokenInfo.status === 'no_show' ? (
-                    <span className="text-rose-455 font-bold block">
-                      {t.noShowStatus}
-                    </span>
-                  ) : (
-                    <span>
-                      {t.waitingWaitStatus}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={checkStatus}
-                    className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-350 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-500" />
-                    {language === 'te' ? 'తాజాకరించు' : 'Refresh'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsVerified(false);
-                      setTokenInfo(null);
-                      setPhoneNumber('');
-                      setCustomerName('');
-                      setInitialChecked(false);
-                      localStorage.removeItem('cp_phone');
-                      localStorage.removeItem('cp_name');
-                    }}
-                    className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 hover:text-slate-200 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  >
-                    {language === 'te' ? 'లాగ్ అవుట్' : 'Sign Out'}
-                  </button>
-                </div>
+                <Clock className="w-5 h-5 text-amber-500 stroke-1" />
               </div>
-            ) : (
-              /* No token exists yet - offer direct registration */
-              <div className="space-y-5 text-center">
-                <div className="space-y-2 pt-2">
-                  <UserCheck className="w-10 h-10 text-emerald-400 mx-auto stroke-1" />
-                  <h3 className="text-base font-bold text-slate-200">
-                    {language === 'te' ? 'ధృవీకరణ పూర్తయింది ✓' : 'Verified ✓'}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
-                    {language === 'te'
-                      ? 'ఈ రోజు మీ నంబర్‌కు ఎలాంటి సక్రియ టోకెన్ లేదు.'
-                      : 'No active token for your number today.'}
-                  </p>
-                </div>
+            </div>
 
-                {/* Live Queue Status */}
-                {queueInfo && (
-                  <div className="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4 space-y-3">
-                    <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">
-                      {language === 'te' ? '📊 ప్రస్తుత క్యూ స్థితి' : '📊 Live Queue Status'}
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
-                        <div className="text-xl font-black text-amber-400 font-mono">{queueInfo.waitingCount}</div>
-                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'వేచి ఉన్నారు' : 'Waiting'}</div>
-                      </div>
-                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
-                        <div className="text-xl font-black text-emerald-400 font-mono">#{queueInfo.nextToken}</div>
-                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'మీ టోకెన్' : 'Your Token'}</div>
-                      </div>
-                      <div className="bg-slate-900 rounded-xl p-2.5 border border-slate-800">
-                        <div className="text-xl font-black text-slate-300 font-mono">~{queueInfo.estimatedWait}m</div>
-                        <div className="text-[9px] text-slate-500 font-semibold mt-0.5">{language === 'te' ? 'అంచనా వేచి' : 'Est. Wait'}</div>
-                      </div>
-                    </div>
-                    {queueInfo.waitingCount === 0 && (
-                      <p className="text-[10px] text-emerald-400 font-bold">
-                        🟢 {language === 'te' ? 'క్యూ ఖాళీగా ఉంది! వెంటనే టోకెన్ పొందండి.' : 'Queue is empty! Get your token instantly.'}
-                      </p>
-                    )}
-                  </div>
-                )}
+            {/* Status messages depending on state */}
+            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4 text-xs text-slate-400 font-semibold leading-relaxed">
+              {tokenInfo.status === 'active' ? (
+                <span className="text-emerald-400 font-bold block animate-pulse">
+                  📍 {t.activeWaitStatus.replace('counter', tokenInfo.counter_assigned || 'Counter 1')}
+                </span>
+              ) : tokenInfo.status === 'no_show' ? (
+                <span className="text-rose-455 font-bold block">
+                  {t.noShowStatus}
+                </span>
+              ) : tokenInfo.status === 'served' ? (
+                <span className="text-emerald-550 font-bold block">
+                  🎉 {language === 'te' ? 'ధన్యవాదాలు! మీ సేవ విజయవంతంగా పూర్తయింది.' : 'Thank you! Your service has been completed successfully.'}
+                </span>
+              ) : (
+                <span>
+                  {language === 'te' 
+                    ? `మీరు వేచి ఉండవలసిన స్థానం: ${tokenInfo.queue_position}. దయచేసి పిలుపు కోసం సిద్ధంగా ఉండండి.`
+                    : `You are at position: ${tokenInfo.queue_position} in the queue. Please stay nearby for your turn.`}
+                </span>
+              )}
+            </div>
 
-                <div className="space-y-2 text-left max-w-xs mx-auto pb-2">
-                  <label className="block text-[11px] font-semibold text-slate-400">
-                    {language === 'te' ? 'కస్టమర్ పేరు' : 'Customer Name'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={language === 'te' ? 'ఉదా: రాము' : 'Enter name (e.g. Ramu)'}
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                  />
-                </div>
-
-                {errorMsg && (
-                  <div className="bg-rose-955/40 border border-rose-900/20 text-rose-455 p-3 rounded-xl text-xs text-center font-medium">
-                    {errorMsg}
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setIsVerified(false);
-                      setTokenInfo(null);
-                      setPhoneNumber('');
-                      setCustomerName('');
-                      setInitialChecked(false);
-                      localStorage.removeItem('cp_phone');
-                      localStorage.removeItem('cp_name');
-                    }}
-                    className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-355 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 cursor-pointer uppercase tracking-wider"
-                  >
-                    {language === 'te' ? 'లాగ్ అవుట్' : 'Sign Out'}
-                  </button>
-                  <button
-                    onClick={handleRegisterToken}
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white py-3.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/30 flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider animate-pulse-slow"
-                  >
-                    {loading ? (language === 'te' ? 'జనరేట్ అవుతోంది...' : 'Generating...') : (language === 'te' ? 'టోకెన్ పొందండి' : 'Get Token')}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {/* Displaying Customer Name & Phone Number */}
+            <div className="bg-slate-950/50 border border-slate-850/80 rounded-2xl p-3.5 text-xs text-left space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">{language === 'te' ? 'కస్టమర్ పేరు:' : 'Customer Name:'}</span>
+                <span className="font-bold text-slate-200">{tokenInfo.customer_name || '-'}</span>
               </div>
-            )}
+              <div className="flex justify-between">
+                <span className="text-slate-500">{language === 'te' ? 'మొబైల్ నంబర్:' : 'Mobile Number:'}</span>
+                <span className="font-mono font-bold text-slate-300">{tokenInfo.phone_number || '-'}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => checkStatus()}
+                disabled={loading}
+                className="flex-1 bg-slate-855 hover:bg-slate-800 text-slate-355 py-3 rounded-xl text-xs font-bold transition-all border border-slate-800 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-emerald-500 ${loading ? 'animate-spin' : ''}`} />
+                {language === 'te' ? 'తాజాకరించు' : 'Refresh'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsVerified(false);
+                  setTokenInfo(null);
+                  setTokenNumber('');
+                  setInitialChecked(false);
+                  localStorage.removeItem('cp_token_number');
+                }}
+                className="flex-1 bg-slate-800 hover:bg-slate-755 text-slate-400 hover:text-slate-200 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {language === 'te' ? 'వెనుకకు' : 'Go Back'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -535,3 +358,4 @@ export default function CustomerPortal({ backendUrl, language }) {
     </div>
   );
 }
+
