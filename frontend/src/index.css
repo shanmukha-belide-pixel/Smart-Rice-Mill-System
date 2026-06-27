@@ -242,6 +242,182 @@ body, .bg-slate-950 {
     inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
 }
 
+/* ============================================================
+   LOGIN PAGE - THEMED GLASS CLASSES
+   These respond to [data-theme="light"] so the toggle works
+   ============================================================ */
+
+/* Page root background */
+.login-page-root {
+  background: #060813;
+}
+[data-theme="light"] .login-page-root {
+  background: #eef2f7 !important;
+}
+
+/* Top-right switcher buttons */
+.login-top-btn {
+  background: rgba(10, 12, 22, 0.7);
+  border-color: rgba(234, 179, 8, 0.2);
+}
+[data-theme="light"] .login-top-btn {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(234, 179, 8, 0.35) !important;
+  color: #334155 !important;
+}
+
+/* Logo box */
+.login-logo-box {
+  background: rgba(10, 12, 22, 0.8);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+[data-theme="light"] .login-logo-box {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(234, 179, 8, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(234, 179, 8, 0.12) !important;
+}
+
+/* Main frosted glass sign-in card */
+.login-glass-card {
+  background: rgba(10, 12, 22, 0.7);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(234, 179, 8, 0.18);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.04);
+}
+[data-theme="light"] .login-glass-card {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(234, 179, 8, 0.3) !important;
+  box-shadow: 0 8px 48px 0 rgba(15, 23, 42, 0.10), inset 0 1px 1px rgba(255, 255, 255, 1.0) !important;
+}
+
+/* Language tab strip */
+.login-lang-switcher {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .login-lang-switcher {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(203, 213, 225, 0.7) !important;
+}
+
+/* Active language tab */
+.login-lang-tab-active {
+  background: rgba(20, 18, 10, 0.8);
+}
+[data-theme="light"] .login-lang-tab-active {
+  background: rgba(255, 255, 255, 1.0) !important;
+}
+
+/* Theme toggle mini button inside card */
+.login-card-btn {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .login-card-btn {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(203, 213, 225, 0.7) !important;
+}
+
+/* Text inputs inside login card */
+.login-glass-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(4px);
+  color: #f1f5f9;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-glass-input::placeholder { color: #475569; }
+.login-glass-input:focus {
+  outline: none;
+  border-color: rgba(234, 179, 8, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.08) !important;
+}
+[data-theme="light"] .login-glass-input {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .login-glass-input::placeholder { color: #94a3b8 !important; }
+[data-theme="light"] .login-glass-input:focus {
+  border-color: rgba(234, 179, 8, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.12) !important;
+}
+
+/* Right panel gradient overlay (dark → less dark in light mode) */
+.login-right-overlay {
+  background: linear-gradient(90deg, rgba(6,8,19,0.95) 0%, rgba(6,8,19,0.3) 40%, rgba(6,8,19,0.7) 100%);
+}
+[data-theme="light"] .login-right-overlay {
+  background: linear-gradient(90deg, rgba(238,242,247,0.92) 0%, rgba(238,242,247,0.2) 40%, rgba(238,242,247,0.65) 100%) !important;
+}
+
+/* Glass feature pill tags */
+.login-tag-pill {
+  background: rgba(10, 12, 22, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(234, 179, 8, 0.15);
+  color: #cbd5e1;
+}
+[data-theme="light"] .login-tag-pill {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(234, 179, 8, 0.35) !important;
+  color: #334155 !important;
+}
+
+/* Right panel grain image glass frame */
+.login-grain-card {
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  background: rgba(10, 12, 22, 0.6);
+  backdrop-filter: blur(12px);
+}
+[data-theme="light"] .login-grain-card {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-color: rgba(234, 179, 8, 0.4) !important;
+}
+
+/* Login page left column BG */
+.login-left-col {
+  background: transparent;
+}
+[data-theme="light"] .login-left-col {
+  background: transparent !important;
+}
+
+/* Page-wide bg gradient overlay (left half) */
+.login-page-overlay {
+  background: linear-gradient(135deg, rgba(6,8,19,0.97) 0%, rgba(6,8,19,0.8) 50%, rgba(6,8,19,0.92) 100%);
+}
+[data-theme="light"] .login-page-overlay {
+  background: linear-gradient(135deg, rgba(238,242,247,0.97) 0%, rgba(238,242,247,0.8) 50%, rgba(238,242,247,0.92) 100%) !important;
+}
+
+/* App name gradient — in light mode fall back to solid dark */
+.login-app-name {
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .login-app-name {
+  background: none !important;
+  -webkit-text-fill-color: #92400e !important;
+  color: #92400e !important;
+}
+
+/* Right-panel heading gradient */
+.login-panel-heading {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .login-panel-heading {
+  background: none !important;
+  -webkit-text-fill-color: #92400e !important;
+  color: #92400e !important;
+}
+
 .glass-panel-glow {
   background: rgba(10, 12, 22, 0.8) !important;
   backdrop-filter: blur(32px) !important;

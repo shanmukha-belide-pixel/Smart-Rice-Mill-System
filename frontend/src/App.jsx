@@ -541,7 +541,7 @@ export default function App() {
   // Unauthenticated Login Screen
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden font-sans" style={{background: '#060813'}}>
+      <div className="min-h-screen login-page-root flex flex-col lg:flex-row relative overflow-hidden font-sans">
 
         {/* === FULL PAGE BACKGROUND: Paddy Field Photo === */}
         <div className="absolute inset-0 z-0">
@@ -552,32 +552,29 @@ export default function App() {
             style={{opacity: 0.18}}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
-          {/* Gradient overlay to darken for readability */}
-          <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, rgba(6,8,19,0.97) 0%, rgba(6,8,19,0.8) 50%, rgba(6,8,19,0.92) 100%)'}} />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 login-page-overlay" />
         </div>
 
         {/* Floating ambient glows */}
         <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)'}} />
-        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)'}} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(217,119,6,0.04) 0%, transparent 65%)'}} />
+        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)'}} />
 
-        {/* Global switcher buttons top right */}
+        {/* Global switcher buttons — top right */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 backdrop-blur-xl text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border transition-all font-semibold shadow-xl cursor-pointer"
-            style={{background: 'rgba(10,12,22,0.7)', borderColor: 'rgba(234,179,8,0.2)'}}
+            className="login-top-btn flex items-center gap-1.5 backdrop-blur-xl text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border transition-all font-semibold shadow-xl cursor-pointer"
           >
             <Languages className="w-4 h-4 text-amber-400" />
             {language === 'te' ? 'English' : 'తెలుగు'}
           </button>
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center backdrop-blur-xl text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border transition-all shadow-xl cursor-pointer"
-            style={{background: 'rgba(10,12,22,0.7)', borderColor: 'rgba(234,179,8,0.2)'}}
+            className="login-top-btn flex items-center justify-center backdrop-blur-xl text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border transition-all shadow-xl cursor-pointer"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
         </div>
 
@@ -587,18 +584,18 @@ export default function App() {
 
             {/* Mill Logo + Branding */}
             <div className="space-y-4">
-              {/* Logo row */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border" style={{background: 'rgba(10,12,22,0.8)', borderColor: 'rgba(234,179,8,0.3)'}}>
+                {/* Original logo restored */}
+                <div className="login-logo-box w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border p-1.5">
                   <img
-                    src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+                    src={`${import.meta.env.BASE_URL}login_illustration.png`}
                     alt="Sri Tirumala Rice Mill"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
+                    className="w-full h-full object-contain rounded-xl select-none"
+                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}rice_grains_hero.png`; }}
                   />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase select-none" style={{background: 'linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d97706 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                  <h1 className="login-app-name text-2xl md:text-3xl font-black tracking-tight uppercase select-none">
                     {t.appName}
                   </h1>
                   <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
@@ -607,7 +604,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Decorative divider with grain icon */}
+              {/* Decorative divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.3), transparent)'}} />
                 <span className="text-amber-600/60 text-sm">🌾</span>
@@ -616,36 +613,34 @@ export default function App() {
             </div>
 
             {/* === GLASS SIGN IN CARD === */}
-            <div className="relative rounded-[2rem] p-8 space-y-6 shadow-2xl" style={{background: 'rgba(10,12,22,0.7)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', border: '1px solid rgba(234,179,8,0.18)', boxShadow: '0 8px 48px 0 rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.04)'}}>
+            <div className="login-glass-card relative rounded-[2rem] p-8 space-y-6 shadow-2xl">
               {/* Top golden shimmer line */}
               <div className="absolute inset-x-0 -top-px h-px rounded-t-[2rem]" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.5), transparent)'}} />
 
-              {/* Language Tabs */}
+              {/* Language Tabs + Theme Toggle */}
               <div className="flex gap-2">
-                <div className="flex-1 flex p-1 rounded-2xl border" style={{background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.06)'}}>
+                <div className="login-lang-switcher flex-1 flex p-1 rounded-2xl border">
                   <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'text-amber-400 border border-amber-900/50 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
-                    style={language === 'te' ? {background: 'rgba(20,18,10,0.8)'} : {}}>
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'login-lang-tab-active text-amber-500 border border-amber-800/40 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
                     🌾 తెలుగు
                   </button>
                   <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'text-amber-400 border border-amber-900/50 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
-                    style={language === 'en' ? {background: 'rgba(20,18,10,0.8)'} : {}}>
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'login-lang-tab-active text-amber-500 border border-amber-800/40 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
                     🌾 English
                   </button>
                 </div>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="p-2.5 rounded-2xl border text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer"
-                  style={{background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.06)'}}
+                  className="login-card-btn p-2.5 rounded-2xl border text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer"
+                  title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
                   {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-500" />}
                 </button>
               </div>
 
               {loginError && (
-                <div className="border text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2" style={{background: 'rgba(136,19,55,0.2)', borderColor: 'rgba(159,18,57,0.3)'}}>
+                <div className="bg-rose-950/40 border border-rose-900/30 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                   <span>{translateError(loginError)}</span>
                 </div>
@@ -664,10 +659,7 @@ export default function App() {
                     <input
                       type="text" required
                       placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
-                      className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none text-slate-100 placeholder:text-slate-600 transition-all font-medium"
-                      style={{background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(4px)'}}
-                      onFocus={e => { e.target.style.borderColor = 'rgba(234,179,8,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(234,179,8,0.08)'; }}
-                      onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = 'none'; }}
+                      className="login-glass-input w-full rounded-xl px-4 py-3 text-sm font-medium"
                       value={loginForm.username}
                       onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     />
@@ -679,10 +671,7 @@ export default function App() {
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"} required placeholder="••••••••"
-                        className="w-full rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none text-slate-100 placeholder:text-slate-600 transition-all font-mono"
-                        style={{background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(4px)'}}
-                        onFocus={e => { e.target.style.borderColor = 'rgba(234,179,8,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(234,179,8,0.08)'; }}
-                        onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = 'none'; }}
+                        className="login-glass-input w-full rounded-xl pl-4 pr-11 py-3 text-sm font-mono"
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                       />
@@ -725,7 +714,6 @@ export default function App() {
 
         {/* ============ RIGHT COLUMN: Rice Mill Visual Panel ============ */}
         <div className="hidden lg:flex lg:w-[55%] relative items-center justify-center overflow-hidden">
-
           {/* Paddy field full panel */}
           <div className="absolute inset-0">
             <img
@@ -735,14 +723,13 @@ export default function App() {
               style={{opacity: 0.5}}
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <div className="absolute inset-0" style={{background: 'linear-gradient(90deg, rgba(6,8,19,0.95) 0%, rgba(6,8,19,0.3) 40%, rgba(6,8,19,0.7) 100%)'}} />
+            <div className="login-right-overlay absolute inset-0" />
           </div>
 
-          {/* Floating glass info card */}
+          {/* Info card */}
           <div className="relative z-10 w-full max-w-xl px-12 space-y-8 animate-fade-in">
-
-            {/* Large grain showcase image */}
-            <div className="relative mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl" style={{border: '1px solid rgba(234,179,8,0.25)', background: 'rgba(10,12,22,0.6)', backdropFilter: 'blur(12px)'}}>
+            {/* Large grain showcase */}
+            <div className="login-grain-card relative mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl">
               <img
                 src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
                 alt="Premium Rice Grains"
@@ -750,23 +737,22 @@ export default function App() {
                 style={{maxHeight: '300px', opacity: 0.95}}
                 onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
               />
-              {/* Shine overlay */}
               <div className="absolute inset-0 rounded-[2.5rem]" style={{background: 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)'}} />
             </div>
 
             {/* Title & description */}
             <div className="space-y-4 text-center">
-              <h3 className="text-2xl font-black" style={{background: 'linear-gradient(135deg, #fef3c7, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+              <h3 className="login-panel-heading text-2xl font-black">
                 {language === 'te' ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్' : 'Modern Rice Mill Automation'}
               </h3>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
                 {language === 'te'
                   ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే స్మార్ట్ కన్సోల్‌లో నిర్వహించండి.'
-                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and billing transactions — all in one smart console.'}
+                  : 'Manage queues, warehouse stocks, real-time weighing tickets, and billing — all in one smart console.'}
               </p>
             </div>
 
-            {/* Glass feature tags */}
+            {/* Glass feature pill tags */}
             <div className="flex flex-wrap justify-center gap-2">
               {[
                 { icon: '🌾', te: 'క్యూ మేనేజ్‌మెంట్', en: 'Queue Management' },
@@ -774,7 +760,7 @@ export default function App() {
                 { icon: '📊', te: 'రియల్ టైమ్ రిపోర్ట్స్', en: 'Live Reports' },
                 { icon: '💳', te: 'బిల్లింగ్', en: 'Billing' },
               ].map(f => (
-                <span key={f.en} className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300" style={{background: 'rgba(10,12,22,0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(234,179,8,0.15)'}}>
+                <span key={f.en} className="login-tag-pill px-3.5 py-1.5 rounded-full text-xs font-semibold">
                   {f.icon} {language === 'te' ? f.te : f.en}
                 </span>
               ))}
@@ -786,6 +772,7 @@ export default function App() {
       </div>
     );
   }
+
 
   // Role permissions checking
   const canAccessTab = (tab) => {
