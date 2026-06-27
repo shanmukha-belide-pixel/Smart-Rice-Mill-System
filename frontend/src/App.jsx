@@ -541,95 +541,120 @@ export default function App() {
   // Unauthenticated Login Screen
   if (!token) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col lg:flex-row relative overflow-hidden font-sans">
-        {/* Animated subtle backdrop circles */}
-        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
+      <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden font-sans" style={{background: '#060813'}}>
+
+        {/* === FULL PAGE BACKGROUND: Paddy Field Photo === */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
+            alt="Paddy Field"
+            className="w-full h-full object-cover select-none"
+            style={{opacity: 0.18}}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          {/* Gradient overlay to darken for readability */}
+          <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, rgba(6,8,19,0.97) 0%, rgba(6,8,19,0.8) 50%, rgba(6,8,19,0.92) 100%)'}} />
+        </div>
+
+        {/* Floating ambient glows */}
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)'}} />
+        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)'}} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(217,119,6,0.04) 0%, transparent 65%)'}} />
 
         {/* Global switcher buttons top right */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
+            className="flex items-center gap-1.5 backdrop-blur-xl text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border transition-all font-semibold shadow-xl cursor-pointer"
+            style={{background: 'rgba(10,12,22,0.7)', borderColor: 'rgba(234,179,8,0.2)'}}
           >
-            <Languages className="w-4 h-4 text-emerald-400" />
+            <Languages className="w-4 h-4 text-amber-400" />
             {language === 'te' ? 'English' : 'తెలుగు'}
           </button>
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
+            className="flex items-center justify-center backdrop-blur-xl text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border transition-all shadow-xl cursor-pointer"
+            style={{background: 'rgba(10,12,22,0.7)', borderColor: 'rgba(234,179,8,0.2)'}}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
           </button>
         </div>
 
-        {/* LEFT COLUMN: Clean Sign-In Form */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 bg-slate-950/65 backdrop-blur-lg">
+        {/* ============ LEFT COLUMN: Glass Sign-In Form ============ */}
+        <div className="w-full lg:w-[45%] flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 relative">
           <div className="w-full max-w-md space-y-8 animate-fade-in">
-            {/* Logo Title */}
-            <div className="text-center lg:text-left space-y-3">
-              {/* Mobile Logo Image */}
-              <div className="lg:hidden flex justify-center mb-4">
-                <div className="w-20 h-20 bg-slate-950/40 rounded-2xl border border-slate-800/80 p-2 shadow-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={`${import.meta.env.BASE_URL}login_illustration.png`} 
-                    alt="Sri Tirumala Rice Mill Logo" 
-                    className="w-full h-full object-contain rounded-xl select-none"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
-                    }}
+
+            {/* Mill Logo + Branding */}
+            <div className="space-y-4">
+              {/* Logo row */}
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border" style={{background: 'rgba(10,12,22,0.8)', borderColor: 'rgba(234,179,8,0.3)'}}>
+                  <img
+                    src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+                    alt="Sri Tirumala Rice Mill"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
                   />
                 </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase select-none" style={{background: 'linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d97706 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                    {t.appName}
+                  </h1>
+                  <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
+                    {language === 'te' ? 'స్మార్ట్ మిల్ మేనేజ్‌మెంట్ సిస్టమ్' : 'Smart Mill Management System'}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-400 uppercase select-none">
-                  {t.appName}
-                </h1>
-                <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase select-none">
-                  {language === 'te' ? 'క్యూ & ఇన్వెంటరీ మేనేజ్‌మెంట్ యాప్' : 'Queue & Inventory Management App'}
-                </p>
+
+              {/* Decorative divider with grain icon */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.3), transparent)'}} />
+                <span className="text-amber-600/60 text-sm">🌾</span>
+                <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.3), transparent)'}} />
               </div>
             </div>
 
-            {/* Form Box */}
-            <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-amber-500/20 transition-colors duration-500">
-              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-700/40 to-transparent" />
+            {/* === GLASS SIGN IN CARD === */}
+            <div className="relative rounded-[2rem] p-8 space-y-6 shadow-2xl" style={{background: 'rgba(10,12,22,0.7)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', border: '1px solid rgba(234,179,8,0.18)', boxShadow: '0 8px 48px 0 rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.04)'}}>
+              {/* Top golden shimmer line */}
+              <div className="absolute inset-x-0 -top-px h-px rounded-t-[2rem]" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.5), transparent)'}} />
 
-              {/* Language Tabs & Theme Toggle */}
+              {/* Language Tabs */}
               <div className="flex gap-2">
-                <div className="flex-1 flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
+                <div className="flex-1 flex p-1 rounded-2xl border" style={{background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.06)'}}>
                   <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                    తెలుగు
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'text-amber-400 border border-amber-900/50 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
+                    style={language === 'te' ? {background: 'rgba(20,18,10,0.8)'} : {}}>
+                    🌾 తెలుగు
                   </button>
                   <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                    English
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'text-amber-400 border border-amber-900/50 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
+                    style={language === 'en' ? {background: 'rgba(20,18,10,0.8)'} : {}}>
+                    🌾 English
                   </button>
                 </div>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="bg-slate-950 p-2.5 rounded-2xl border border-slate-850 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-inner"
-                  title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                  className="p-2.5 rounded-2xl border text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer"
+                  style={{background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.06)'}}
                 >
                   {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-500" />}
                 </button>
               </div>
 
               {loginError && (
-                <div className="bg-rose-950/40 border border-rose-900/30 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                <div className="border text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2" style={{background: 'rgba(136,19,55,0.2)', borderColor: 'rgba(159,18,57,0.3)'}}>
                   <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                   <span>{translateError(loginError)}</span>
                 </div>
               )}
 
-              {/* Login form */}
+              {/* Sign In form */}
               <>
-                <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
+                <h2 className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  {language === 'te' ? '🔐 కన్సోల్ లాగిన్' : '🔐 Console Sign In'}
                 </h2>
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
@@ -639,7 +664,10 @@ export default function App() {
                     <input
                       type="text" required
                       placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-medium"
+                      className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none text-slate-100 placeholder:text-slate-600 transition-all font-medium"
+                      style={{background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(4px)'}}
+                      onFocus={e => { e.target.style.borderColor = 'rgba(234,179,8,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(234,179,8,0.08)'; }}
+                      onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = 'none'; }}
                       value={loginForm.username}
                       onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     />
@@ -651,7 +679,10 @@ export default function App() {
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"} required placeholder="••••••••"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
+                        className="w-full rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none text-slate-100 placeholder:text-slate-600 transition-all font-mono"
+                        style={{background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(4px)'}}
+                        onFocus={e => { e.target.style.borderColor = 'rgba(234,179,8,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(234,179,8,0.08)'; }}
+                        onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = 'none'; }}
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                       />
@@ -665,81 +696,92 @@ export default function App() {
                     </div>
                   </div>
                   <button type="submit" disabled={loading}
-                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
-                    {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
+                    className="w-full disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider mt-3 cursor-pointer shadow-2xl"
+                    style={{background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #b45309 100%)', boxShadow: '0 4px 24px rgba(234,179,8,0.25)'}}>
+                    {loading ? (language === 'te' ? '⏳ ధృవీకరిస్తోంది...' : '⏳ Authenticating...') : (language === 'te' ? '🚀 ప్రవేశించు' : '🚀 Sign In')}
                   </button>
                 </form>
               </>
-
             </div>
 
-            {/* Quick Access to client portals */}
+            {/* Quick Access Portals */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-xs font-semibold pt-2">
               <button
                 onClick={() => setRole('public')}
-                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-slate-600 hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 📺 {language === 'te' ? 'పబ్లిక్ డిస్‌ప్లే టీవీ' : 'Open Public Display TV'}
               </button>
               <span className="text-slate-800 hidden sm:inline">|</span>
               <button
                 onClick={() => setRole('customer')}
-                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-slate-600 hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 📱 {language === 'te' ? 'కస్టమర్ మొబైల్ పోర్టల్' : 'Open Customer App'}
               </button>
             </div>
-
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Visual Panel with Clean Illustration */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900/40 border-l border-slate-900 items-center justify-center p-12 overflow-hidden">
-          {/* Grid pattern background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35" />
-          
-          <div className="relative z-10 w-full max-w-lg text-center space-y-8 animate-fade-in">
-            {/* The Custom Minimalist Illustration */}
-            <div className="relative mx-auto w-full max-w-md aspect-square bg-slate-950/20 rounded-[2.5rem] border border-slate-800/60 p-6 shadow-2xl flex items-center justify-center overflow-hidden">
-              <img 
-                src={`${import.meta.env.BASE_URL}login_illustration.png`} 
-                alt="Smart Rice Mill Dashboard Illustration" 
-                className="w-full h-full object-contain rounded-2xl select-none"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600"; // fallback if missing
-                }}
+        {/* ============ RIGHT COLUMN: Rice Mill Visual Panel ============ */}
+        <div className="hidden lg:flex lg:w-[55%] relative items-center justify-center overflow-hidden">
+
+          {/* Paddy field full panel */}
+          <div className="absolute inset-0">
+            <img
+              src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
+              alt="Paddy Fields"
+              className="w-full h-full object-cover select-none"
+              style={{opacity: 0.5}}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <div className="absolute inset-0" style={{background: 'linear-gradient(90deg, rgba(6,8,19,0.95) 0%, rgba(6,8,19,0.3) 40%, rgba(6,8,19,0.7) 100%)'}} />
+          </div>
+
+          {/* Floating glass info card */}
+          <div className="relative z-10 w-full max-w-xl px-12 space-y-8 animate-fade-in">
+
+            {/* Large grain showcase image */}
+            <div className="relative mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl" style={{border: '1px solid rgba(234,179,8,0.25)', background: 'rgba(10,12,22,0.6)', backdropFilter: 'blur(12px)'}}>
+              <img
+                src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+                alt="Premium Rice Grains"
+                className="w-full object-cover rounded-[2.5rem] select-none"
+                style={{maxHeight: '300px', opacity: 0.95}}
+                onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
               />
+              {/* Shine overlay */}
+              <div className="absolute inset-0 rounded-[2.5rem]" style={{background: 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)'}} />
             </div>
 
-            {/* Feature Text */}
-            <div className="space-y-4 px-6">
-              <h3 className="text-xl font-bold text-slate-100">
-                {language === 'te' 
-                  ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్ కన్సోల్' 
-                  : 'Modern Rice Mill Automation Console'}
+            {/* Title & description */}
+            <div className="space-y-4 text-center">
+              <h3 className="text-2xl font-black" style={{background: 'linear-gradient(135deg, #fef3c7, #fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                {language === 'te' ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్' : 'Modern Rice Mill Automation'}
               </h3>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
                 {language === 'te'
-                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే చోట నిర్వహించండి.'
-                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and billing transactions seamlessly.'}
+                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే స్మార్ట్ కన్సోల్‌లో నిర్వహించండి.'
+                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and billing transactions — all in one smart console.'}
               </p>
-              
-              {/* Feature Tags */}
-              <div className="flex flex-wrap justify-center gap-2 pt-2">
-                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
-                  📋 {language === 'te' ? 'క్యూ మేనేజ్‌మెంట్' : 'Queue Management'}
+            </div>
+
+            {/* Glass feature tags */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { icon: '🌾', te: 'క్యూ మేనేజ్‌మెంట్', en: 'Queue Management' },
+                { icon: '📦', te: 'ఇన్వెంటరీ', en: 'Inventory' },
+                { icon: '📊', te: 'రియల్ టైమ్ రిపోర్ట్స్', en: 'Live Reports' },
+                { icon: '💳', te: 'బిల్లింగ్', en: 'Billing' },
+              ].map(f => (
+                <span key={f.en} className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300" style={{background: 'rgba(10,12,22,0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(234,179,8,0.15)'}}>
+                  {f.icon} {language === 'te' ? f.te : f.en}
                 </span>
-                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
-                  📦 {language === 'te' ? 'ఇన్వెంటరీ నిల్వలు' : 'Inventory Tracking'}
-                </span>
-                <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">
-                  📊 {language === 'te' ? 'రియల్ టైమ్ డాష్‌బోర్డ్' : 'Real-time Analytics'}
-                </span>
-              </div>
+              ))}
             </div>
           </div>
         </div>
+
         {renderToasts()}
       </div>
     );
