@@ -541,10 +541,29 @@ export default function App() {
   // Unauthenticated Login Screen
   if (!token) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col lg:flex-row relative overflow-hidden font-sans">
-        {/* Animated subtle backdrop circles */}
-        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
+      <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden font-sans">
+
+        {/* ===== FULL-PAGE BACKGROUND: Rice harvest image ===== */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={`${import.meta.env.BASE_URL}rice_harvest.png`}
+            alt=""
+            className="w-full h-full object-cover select-none"
+            style={{opacity: 0.55}}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `${import.meta.env.BASE_URL}paddy_field_bg.png`;
+            }}
+          />
+          {/* Dark vignette overlay — keeps text readable */}
+          <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, rgba(2,6,23,0.93) 0%, rgba(2,6,23,0.78) 40%, rgba(2,6,23,0.65) 100%)'}} />
+          {/* Bottom fade */}
+          <div className="absolute inset-0" style={{background: 'linear-gradient(0deg, rgba(2,6,23,0.95) 0%, transparent 40%)'}} />
+        </div>
+
+        {/* Ambient glows on top of the background */}
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-amber-500/8 rounded-full blur-3xl animate-pulse-slow pointer-events-none z-0" />
+        <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/6 rounded-full blur-3xl animate-pulse-slow pointer-events-none z-0" />
 
         {/* Global switcher buttons top right */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
@@ -564,9 +583,11 @@ export default function App() {
           </button>
         </div>
 
-        {/* LEFT COLUMN: Sign-In Form */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 bg-slate-950/65 backdrop-blur-lg">
-          <div className="w-full max-w-md space-y-8 animate-fade-in">
+        {/* LEFT COLUMN: Sign-In Form — dark glass over the background */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 relative">
+          {/* Frosted dark glass backing for the left column */}
+          <div className="absolute inset-0" style={{background: 'rgba(2,6,23,0.6)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)'}} />
+          <div className="relative z-10 w-full max-w-md space-y-8 animate-fade-in">
 
             {/* Logo + Title */}
             <div className="text-center lg:text-left space-y-3">
@@ -693,21 +714,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Visual Panel with rice mill images */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900/40 border-l border-slate-900 items-center justify-center p-12 overflow-hidden">
-          {/* Grid pattern background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35" />
-
-          {/* Subtle paddy field tint */}
-          <div className="absolute inset-0 overflow-hidden">
-            <img
-              src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
-              alt=""
-              className="w-full h-full object-cover select-none"
-              style={{opacity: 0.08}}
-              onError={(e) => { e.target.style.display='none'; }}
-            />
-          </div>
+        {/* RIGHT COLUMN: Visual Panel — transparent, lets the BG shine through */}
+        <div className="hidden lg:flex lg:w-1/2 relative border-l border-white/5 items-center justify-center p-12 overflow-hidden z-10">
+          {/* Subtle grid overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+          {/* Right-side slight dark tint so image gallery pops */}
+          <div className="absolute inset-0" style={{background: 'rgba(2,6,23,0.35)'}} />
 
           <div className="relative z-10 w-full max-w-lg space-y-6 animate-fade-in">
 
