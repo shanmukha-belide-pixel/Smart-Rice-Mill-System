@@ -21,7 +21,14 @@ const BACKEND_URL = (
 
 
 export default function App() {
-  const [role, setRole] = useState(() => localStorage.getItem('role') || null);
+  const [role, setRole] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlRole = params.get('role');
+    if (urlRole === 'customer' || urlRole === 'public') {
+      return urlRole;
+    }
+    return localStorage.getItem('role') || null;
+  });
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [fullName, setFullName] = useState(() => localStorage.getItem('name') || '');
   const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('currentTab') || 'dashboard');
