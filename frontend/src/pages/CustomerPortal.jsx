@@ -234,6 +234,17 @@ export default function CustomerPortal({ backendUrl, language }) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-850 pb-4 mb-4">
         <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center p-1 overflow-hidden shadow-inner">
+            <img 
+              src={`${import.meta.env.BASE_URL || ''}login_illustration.png`} 
+              alt="Sri Tirumala Rice Mill Logo" 
+              className="w-full h-full object-contain rounded-lg"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
+              }}
+            />
+          </div>
           <div>
             <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">{t.appName}</h2>
             <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase font-bold">{t.customerPortal}</span>
