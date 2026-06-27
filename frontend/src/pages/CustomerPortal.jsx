@@ -206,7 +206,7 @@ export default function CustomerPortal({ backendUrl, language }) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-850/60 pb-4 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-slate-950/60 border border-amber-800/30 flex items-center justify-center overflow-hidden shadow-inner">
+          <div className="w-10 h-10 rounded-xl bg-slate-955/60 border border-amber-800/30 flex items-center justify-center overflow-hidden shadow-inner">
             <img 
               src={`${import.meta.env.BASE_URL || ''}tirumala_logo.png`} 
               alt="Sri Tirumala Rice Mill Logo" 
@@ -319,7 +319,7 @@ export default function CustomerPortal({ backendUrl, language }) {
                   </h3>
                   <p className="text-[11px] cp-text-desc leading-normal">
                     {language === 'te' 
-                      ? 'మీ పేరు మరియు మొబైల్ నంబర్ ఇచ్చి టోకెన్ జెనరేట్ చేయండి.' 
+                      ? 'మీ పేరు మరియు మొబైль నంబర్ ఇచ్చి టోకెన్ జెనరేట్ చేయండి.' 
                       : 'Provide name & mobile number to generate a token.'}
                   </p>
                 </div>
@@ -343,16 +343,16 @@ export default function CustomerPortal({ backendUrl, language }) {
                     {language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-3.5 text-xs cp-phone-prefix font-mono">+91</span>
                     <input 
                       type="tel" 
                       required 
                       placeholder="9876543210" 
                       pattern="[0-9]{10}"
-                      className="w-full login-form-input rounded-xl pl-12 pr-4 py-3 text-xs font-mono"
+                      className="w-full login-form-input rounded-xl pl-12 pr-4 py-3 text-xs font-mono relative z-0"
                       value={phoneNumber} 
                       onChange={(e) => setPhoneNumber(e.target.value)} 
                     />
+                    <span className="absolute left-4 top-3.5 text-xs cp-phone-prefix font-mono z-10 pointer-events-none">+91</span>
                   </div>
                 </div>
 
@@ -402,7 +402,7 @@ export default function CustomerPortal({ backendUrl, language }) {
                   <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">
                     {tokenInfo.status === 'waiting' ? (language === 'te' ? 'స్థానం' : 'Position') : t.estimatedWait}
                   </span>
-                  <div className="text-xs font-bold text-slate-350 mt-1">
+                  <div className="text-xs font-bold text-slate-355 mt-1">
                     {tokenInfo.status === 'waiting' 
                       ? `${language === 'te' ? '#' : 'No. '}${tokenInfo.queue_position || 1}`
                       : tokenInfo.status === 'served' ? '-' : `~${tokenInfo.estimated_wait_minutes || 0} ${language === 'te' ? 'ని.' : 'mins'}`}
