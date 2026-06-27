@@ -543,6 +543,40 @@ export default function App() {
     return (
       <div className="login-page-root min-h-screen flex flex-col lg:flex-row relative overflow-hidden font-sans">
 
+        {/* ══════════════════════════════════════════════
+            FULL-PAGE BACKGROUND — 4-image rice mill mosaic
+            covers BOTH left and right sides
+        ══════════════════════════════════════════════ */}
+        <div className="absolute inset-0 z-0 grid grid-cols-2 grid-rows-2">
+          {/* Top-left: Rice Harvest (golden paddy field) */}
+          <div className="relative overflow-hidden">
+            <img src={`${import.meta.env.BASE_URL}rice_harvest.png`} alt=""
+              className="w-full h-full object-cover select-none"
+              onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
+          </div>
+          {/* Top-right: Weighing Scale */}
+          <div className="relative overflow-hidden">
+            <img src={`${import.meta.env.BASE_URL}weighing_scale.png`} alt=""
+              className="w-full h-full object-cover select-none"
+              onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}rice_grains_hero.png`; }} />
+          </div>
+          {/* Bottom-left: Rice Grains close-up */}
+          <div className="relative overflow-hidden">
+            <img src={`${import.meta.env.BASE_URL}rice_grains_hero.png`} alt=""
+              className="w-full h-full object-cover select-none"
+              onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
+          </div>
+          {/* Bottom-right: Rice Mill Machinery */}
+          <div className="relative overflow-hidden">
+            <img src={`${import.meta.env.BASE_URL}rice_mill_machinery.png`} alt=""
+              className="w-full h-full object-cover select-none"
+              onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
+          </div>
+        </div>
+
+        {/* Full-page frosted glass overlay on top of mosaic */}
+        <div className="login-bg-overlay absolute inset-0 z-[1]" />
+
         {/* ══ TOP-RIGHT: Language + Theme toggles ══ */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
           <button onClick={toggleLanguage}
@@ -557,45 +591,9 @@ export default function App() {
           </button>
         </div>
 
-        {/* ══════════════════════════════════════════
-            LEFT COLUMN — 3-image mosaic background
-            with frosted glass sign-in form on top
-        ══════════════════════════════════════════ */}
-        <div className="w-full lg:w-1/2 relative flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 min-h-screen lg:min-h-0 overflow-hidden">
-
-          {/* ── IMAGE MOSAIC BACKGROUND ── */}
-          <div className="absolute inset-0 z-0 grid grid-cols-2 grid-rows-2">
-            {/* Top-left: Rice Harvest */}
-            <div className="relative overflow-hidden">
-              <img src={`${import.meta.env.BASE_URL}rice_harvest.png`} alt=""
-                className="w-full h-full object-cover select-none"
-                onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
-            </div>
-            {/* Top-right: Weighing Scale */}
-            <div className="relative overflow-hidden">
-              <img src={`${import.meta.env.BASE_URL}weighing_scale.png`} alt=""
-                className="w-full h-full object-cover select-none"
-                onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}rice_grains_hero.png`; }} />
-            </div>
-            {/* Bottom-left: Rice Grains */}
-            <div className="relative overflow-hidden">
-              <img src={`${import.meta.env.BASE_URL}rice_grains_hero.png`} alt=""
-                className="w-full h-full object-cover select-none"
-                onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
-            </div>
-            {/* Bottom-right: Machinery */}
-            <div className="relative overflow-hidden">
-              <img src={`${import.meta.env.BASE_URL}rice_mill_machinery.png`} alt=""
-                className="w-full h-full object-cover select-none"
-                onError={(e) => { e.target.onerror=null; e.target.src=`${import.meta.env.BASE_URL}paddy_field_bg.png`; }} />
-            </div>
-          </div>
-
-          {/* ── Frosted glass overlay on top of mosaic ── */}
-          <div className="login-left-glass absolute inset-0 z-[1]" />
-
-          {/* ── Form content sits above both ── */}
-          <div className="relative z-10 w-full max-w-md space-y-7 animate-fade-in">
+        {/* ══ LEFT COLUMN — Sign-in form floats over full-page bg ══ */}
+        <div className="w-full lg:w-1/2 relative z-10 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 min-h-screen lg:min-h-0">
+          <div className="w-full max-w-md space-y-7 animate-fade-in">
 
             {/* Logo + App Name */}
             <div className="flex items-center gap-4">
@@ -696,14 +694,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════
-            RIGHT COLUMN — Clean logo showcase
-            with subtle dark panel + features
-        ══════════════════════════════════════════ */}
-        <div className="login-right-panel hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 overflow-hidden border-l border-white/5">
-
+        {/* ══ RIGHT COLUMN — Logo panel floats over full-page bg ══ */}
+        <div className="hidden lg:flex lg:w-1/2 relative z-10 items-center justify-center p-12 overflow-hidden border-l border-white/8">
           {/* Subtle grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem]" />
 
           <div className="relative z-10 w-full max-w-sm text-center space-y-8 animate-fade-in">
 
