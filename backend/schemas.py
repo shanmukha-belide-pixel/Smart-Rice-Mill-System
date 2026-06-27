@@ -82,7 +82,7 @@ class SaleCreate(BaseModel):
     token_id: Optional[int] = None
     variety_name: str
     quantity_kg: float
-    payment_mode: str # 'Cash', 'UPI', 'Credit'
+    payment_mode: str # 'Cash', 'UPI', 'Card'
     customer_name: Optional[str] = None # Name entered by staff when serving
 
 class SaleResponse(BaseModel):
@@ -112,7 +112,7 @@ class DailyReportResponse(BaseModel):
     no_shows: int
     no_show_rate: float
     total_revenue: float
-    payment_breakdown: dict # e.g. {"Cash": 100, "UPI": 200, "Credit": 50}
+    payment_breakdown: dict # e.g. {"Cash": 100, "UPI": 200, "Card": 50}
     stock_consumed: dict # e.g. {"Basmati": 50, "Sona Masuri": 100}
     avg_service_time: float
 

@@ -988,12 +988,11 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
               {/* Payment Mode Selection */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-slate-400">{t.paymentMode}</label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
                   {[
                     { mode: 'Cash', label: t.cash },
                     { mode: 'UPI', label: t.upi },
-                    { mode: 'Card', label: t.card },
-                    { mode: 'Credit', label: t.credit }
+                    { mode: 'Card', label: t.card }
                   ].map(item => (
                     <button
                       key={item.mode}

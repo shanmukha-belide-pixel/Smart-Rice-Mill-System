@@ -60,7 +60,7 @@ class Sale(Base):
     variety_name = Column(String, nullable=False)
     quantity_kg = Column(Float, nullable=False)
     total_price = Column(Float, nullable=False)
-    payment_mode = Column(String, nullable=False) # 'Cash', 'UPI', 'Credit'
+    payment_mode = Column(String, nullable=False) # 'Cash', 'UPI', 'Card'
     service_time_seconds = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 

@@ -724,7 +724,7 @@ def get_daily_report(db: Session = Depends(get_db), current_user: User = Depends
     ).all()
     total_rev = sum(s.total_price for s in sales)
     
-    payment_split = {"Cash": 0.0, "UPI": 0.0, "Credit": 0.0}
+    payment_split = {"Cash": 0.0, "UPI": 0.0, "Card": 0.0}
     for s in sales:
         payment_split[s.payment_mode] = payment_split.get(s.payment_mode, 0.0) + s.total_price
         
