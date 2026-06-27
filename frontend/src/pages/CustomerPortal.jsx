@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Clock, RefreshCw, Volume2, VolumeX, Search } from 'lucide-react';
+import { Users, Clock, RefreshCw, Volume2, VolumeX, Search, PlusCircle } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 export default function CustomerPortal({ backendUrl, language }) {
+  const [activeTab, setActiveTab] = useState('track'); // 'track' or 'register'
   const [tokenNumber, setTokenNumber] = useState(() => localStorage.getItem('cp_token_number') || '');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -133,6 +136,52 @@ export default function CustomerPortal({ backendUrl, language }) {
     }
   };
 
+  // Register Token submit action
+  const handleRegisterToken = async (e) => {
+    if (e) e.preventDefault();
+    if (!phoneNumber || phoneNumber.length !== 10) {
+      setErrorMsg(language === 'te' ? 'దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    const fullPhone = '+91' + phoneNumber;
+
+    try {
+      const res = await fetch(`${backendUrl}/api/tokens/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: fullPhone,
+          customer_name: customerName.trim() || null
+        })
+      });
+
+      if (res.ok) {
+        const tokenData = await res.json();
+        // Save the registered token number to localstorage & state
+        localStorage.setItem('cp_token_number', tokenData.token_number);
+        setTokenNumber(tokenData.token_number);
+        setTokenInfo({
+          token_number: tokenData.token_number,
+          customer_name: tokenData.customer_name || "Customer",
+          phone_number: tokenData.phone_number,
+          status: tokenData.status,
+          queue_position: 1, // Will refresh accurately on next status check
+          estimated_wait_minutes: tokenData.wait_time_minutes
+        });
+        setIsVerified(true);
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.detail || (language === 'te' ? 'టోకెన్ నమోదు చేయడంలో లోపం. మళ్లీ ప్రయత్నించండి.' : 'Error generating token. Try again.'));
+      }
+    } catch (err) {
+      setErrorMsg(language === 'te' ? 'సర్వర్ కనెక్షన్ విఫలమైంది.' : 'Server connection failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // On mount: if token number saved in localStorage, auto-restore session
   useEffect(() => {
     const savedToken = localStorage.getItem('cp_token_number');
@@ -150,7 +199,7 @@ export default function CustomerPortal({ backendUrl, language }) {
   }, [isVerified, tokenNumber]);
 
   return (
-    <div className="max-w-md mx-auto min-h-[480px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
+    <div className="max-w-md mx-auto min-h-[500px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
       {/* Decorative gradient overlay */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       
@@ -201,17 +250,24 @@ export default function CustomerPortal({ backendUrl, language }) {
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center py-4">
         {!isVerified || !tokenInfo ? (
-          /* Token Search Screen */
-          <form onSubmit={handleTrackToken} className="space-y-5 animate-fade-in">
-            <div className="text-center space-y-1.5 pb-2">
-              <h3 className="text-lg font-bold text-slate-200">
-                {language === 'te' ? 'మీ టోకెన్ ట్రాక్ చేయండి' : 'Track Your Token'}
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {language === 'te' 
-                  ? 'కౌంటర్ వద్ద పొందిన టోకెన్ నంబర్ నమోదు చేసి లైవ్ స్థితిని చూడండి.' 
-                  : 'Enter the token number received at the counter to view live status.'}
-              </p>
+          /* Form tab views: Track vs Register */
+          <div className="space-y-5 animate-fade-in">
+            {/* Tab switchers */}
+            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
+              <button 
+                type="button" 
+                onClick={() => { setActiveTab('track'); setErrorMsg(''); }}
+                className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'track' ? 'bg-slate-900 text-amber-500 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
+              >
+                🔍 {language === 'te' ? 'ట్రాక్ టోకెన్' : 'Track Token'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setActiveTab('register'); setErrorMsg(''); }}
+                className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'register' ? 'bg-slate-900 text-amber-500 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}
+              >
+                ➕ {language === 'te' ? 'కొత్త టోకెన్' : 'New Token'}
+              </button>
             </div>
 
             {errorMsg && (
@@ -220,28 +276,94 @@ export default function CustomerPortal({ backendUrl, language }) {
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400">
-                {language === 'te' ? 'టోకెన్ నంబర్' : 'Token Number'}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'te' ? 'ఉదా: T-005 లేదా 5' : 'e.g. T-005 or 5'}
-                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono tracking-widest uppercase"
-                  value={tokenNumber}
-                  onChange={(e) => setTokenNumber(e.target.value)}
-                />
-              </div>
-            </div>
+            {activeTab === 'track' ? (
+              /* TRACK TOKEN FORM */
+              <form onSubmit={handleTrackToken} className="space-y-4">
+                <div className="text-center space-y-1 pb-1">
+                  <h3 className="text-sm font-bold text-slate-350">
+                    {language === 'te' ? 'టోకెన్ స్థితి శోధించండి' : 'Search Token Status'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    {language === 'te' 
+                      ? 'లైవ్ స్థితిని చూడడానికి మీ టోకెన్ నంబర్ నమోదు చేయండి.' 
+                      : 'Enter token number to see live status.'}
+                  </p>
+                </div>
 
-            <button type="submit" disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 py-3.5 rounded-xl text-xs font-extrabold transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider">
-              <Search className="w-4 h-4" />
-              {loading ? (language === 'te' ? 'శోధిస్తోంది...' : 'Searching...') : (language === 'te' ? 'ట్రాక్ చేయండి' : 'Track Token')}
-            </button>
-          </form>
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-400">
+                    {language === 'te' ? 'టోకెన్ నంబర్' : 'Token Number'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'te' ? 'ఉదా: T-005 లేదా 5' : 'e.g. T-005 or 5'}
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono tracking-widest uppercase"
+                    value={tokenNumber}
+                    onChange={(e) => setTokenNumber(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" disabled={loading}
+                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 py-3.5 rounded-xl text-xs font-extrabold transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider">
+                  <Search className="w-4 h-4" />
+                  {loading ? (language === 'te' ? 'శోధిస్తోంది...' : 'Searching...') : (language === 'te' ? 'ట్రాక్ చేయండి' : 'Track Token')}
+                </button>
+              </form>
+            ) : (
+              /* REGISTER TOKEN FORM */
+              <form onSubmit={handleRegisterToken} className="space-y-4">
+                <div className="text-center space-y-1 pb-1">
+                  <h3 className="text-sm font-bold text-slate-350">
+                    {language === 'te' ? 'కొత్త టోకెన్ కోసం నమోదు చేసుకోండి' : 'Register New Token'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    {language === 'te' 
+                      ? 'మీ పేరు మరియు మొబైల్ నంబర్ ఇచ్చి టోకెన్ జెనరేట్ చేయండి.' 
+                      : 'Provide name & mobile number to generate a token.'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-400">
+                    {language === 'te' ? 'మీ పేరు' : 'Your Name'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'te' ? 'ఉదా: రామయ్య' : 'e.g. Ramaiah'}
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-400">
+                    {language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3.5 text-xs text-slate-500 font-mono">+91</span>
+                    <input 
+                      type="tel" 
+                      required 
+                      placeholder="9876543210" 
+                      pattern="[0-9]{10}"
+                      className="w-full bg-slate-950 border border-slate-850 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono"
+                      value={phoneNumber} 
+                      onChange={(e) => setPhoneNumber(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-655 hover:from-emerald-500 hover:to-teal-555 text-white py-3.5 rounded-xl text-xs font-extrabold transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider">
+                  <PlusCircle className="w-4 h-4" />
+                  {loading ? (language === 'te' ? 'నమోదు అవుతోంది...' : 'Registering...') : (language === 'te' ? 'టోకెన్ పొందండి' : 'Get Token')}
+                </button>
+              </form>
+            )}
+          </div>
         ) : (
           /* Live Ticket view */
           <div className="space-y-5 text-center animate-fade-in">
