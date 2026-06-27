@@ -586,12 +586,12 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 {/* Original logo restored */}
-                <div className="login-logo-box w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border p-1.5">
+                <div className="login-logo-box w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border">
                   <img
-                    src={`${import.meta.env.BASE_URL}login_illustration.png`}
-                    alt="Sri Tirumala Rice Mill"
-                    className="w-full h-full object-contain rounded-xl select-none"
-                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}rice_grains_hero.png`; }}
+                    src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+                    alt="Sri Tirumala Rice Mill Logo"
+                    className="w-full h-full object-cover select-none"
+                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
                   />
                 </div>
                 <div>
@@ -658,7 +658,7 @@ export default function App() {
                     </label>
                     <input
                       type="text" required
-                      placeholder={language === 'te' ? 'ఉదా: Shanmukha' : 'Enter username'}
+                      placeholder={language === 'te' ? 'యూజర్‌నేమ్ నమోదు చేయండి' : 'Enter username'}
                       className="login-glass-input w-full rounded-xl px-4 py-3 text-sm font-medium"
                       value={loginForm.username}
                       onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
@@ -713,39 +713,30 @@ export default function App() {
         </div>
 
         {/* ============ RIGHT COLUMN: Rice Mill Visual Panel ============ */}
-        <div className="hidden lg:flex lg:w-[55%] relative items-center justify-center overflow-hidden">
-          {/* Paddy field full panel */}
+        <div className="hidden lg:flex lg:w-[55%] relative items-end justify-center overflow-hidden">
+
+          {/* Full panel: rice grain image fills entire column */}
           <div className="absolute inset-0">
             <img
-              src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
-              alt="Paddy Fields"
+              src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+              alt="Premium Rice Grains"
               className="w-full h-full object-cover select-none"
-              style={{opacity: 0.5}}
-              onError={(e) => { e.target.style.display = 'none'; }}
+              style={{opacity: 0.85}}
+              onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}paddy_field_bg.png`; }}
             />
-            <div className="login-right-overlay absolute inset-0" />
+            {/* Gradient overlay: left edge fades to match left column, bottom darkens for text legibility */}
+            <div className="absolute inset-0" style={{background: 'linear-gradient(90deg, rgba(6,8,19,0.9) 0%, rgba(6,8,19,0.2) 35%, rgba(6,8,19,0.1) 100%)'}} />
+            <div className="absolute inset-0" style={{background: 'linear-gradient(0deg, rgba(6,8,19,0.88) 0%, transparent 55%)'}} />
           </div>
 
-          {/* Info card */}
-          <div className="relative z-10 w-full max-w-xl px-12 space-y-8 animate-fade-in">
-            {/* Large grain showcase */}
-            <div className="login-grain-card relative mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl">
-              <img
-                src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
-                alt="Premium Rice Grains"
-                className="w-full object-cover rounded-[2.5rem] select-none"
-                style={{maxHeight: '300px', opacity: 0.95}}
-                onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
-              />
-              <div className="absolute inset-0 rounded-[2.5rem]" style={{background: 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)'}} />
-            </div>
-
+          {/* Info overlay at the bottom */}
+          <div className="relative z-10 w-full px-10 pb-14 space-y-5 animate-fade-in">
             {/* Title & description */}
-            <div className="space-y-4 text-center">
-              <h3 className="login-panel-heading text-2xl font-black">
+            <div className="space-y-3">
+              <h3 className="login-panel-heading text-3xl font-black">
                 {language === 'te' ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్' : 'Modern Rice Mill Automation'}
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
+              <p className="text-slate-300 text-sm leading-relaxed max-w-sm">
                 {language === 'te'
                   ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే స్మార్ట్ కన్సోల్‌లో నిర్వహించండి.'
                   : 'Manage queues, warehouse stocks, real-time weighing tickets, and billing — all in one smart console.'}
@@ -753,7 +744,7 @@ export default function App() {
             </div>
 
             {/* Glass feature pill tags */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { icon: '🌾', te: 'క్యూ మేనేజ్‌మెంట్', en: 'Queue Management' },
                 { icon: '📦', te: 'ఇన్వెంటరీ', en: 'Inventory' },

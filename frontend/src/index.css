@@ -279,16 +279,21 @@ body, .bg-slate-950 {
 
 /* Main frosted glass sign-in card */
 .login-glass-card {
-  background: rgba(10, 12, 22, 0.7);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(234, 179, 8, 0.18);
-  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.04);
+  background: rgba(8, 10, 20, 0.72);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  border: 1px solid rgba(234, 179, 8, 0.22);
+  box-shadow: 
+    0 8px 48px 0 rgba(0, 0, 0, 0.65),
+    0 1px 0 0 rgba(234, 179, 8, 0.12) inset,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 [data-theme="light"] .login-glass-card {
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
   border-color: rgba(234, 179, 8, 0.3) !important;
-  box-shadow: 0 8px 48px 0 rgba(15, 23, 42, 0.10), inset 0 1px 1px rgba(255, 255, 255, 1.0) !important;
+  box-shadow: 0 8px 48px 0 rgba(15, 23, 42, 0.12), inset 0 1px 1px rgba(255, 255, 255, 1.0) !important;
 }
 
 /* Language tab strip */
