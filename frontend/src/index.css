@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
@@ -56,10 +56,16 @@
   }
 }
 
-body {
-  font-family: 'Outfit', sans-serif;
+body, .bg-slate-950 {
+  font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
   @apply bg-slate-950 text-slate-100 antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: #060813 !important;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(234, 179, 8, 0.09) 0px, transparent 50%),
+    radial-gradient(at 85% 20%, rgba(16, 185, 129, 0.07) 0px, transparent 45%),
+    radial-gradient(at 50% 80%, rgba(217, 119, 6, 0.08) 0px, transparent 50%) !important;
+  background-attachment: fixed !important;
 }
 
 /* ============================================================
@@ -200,61 +206,67 @@ body {
 
 /* Glass panel overrides */
 [data-theme="light"] .glass-panel {
-  background: rgba(255,255,255,0.95) !important;
-  border: 1px solid rgba(251,191,36,0.25) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,0.8) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important; /* Soft Amber Border */
+  box-shadow: 
+    0 8px 32px 0 rgba(15, 23, 42, 0.06), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Inputs */
 [data-theme="light"] input,
 [data-theme="light"] textarea,
 [data-theme="light"] select {
-  background-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 [data-theme="light"] input::placeholder { color: #94a3b8 !important; }
 
 /* Scrollbar */
-[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(241,245,249,0.5); }
-[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); }
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
+[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(241,245,249,0.3); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.2); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.4); }
 
 /* Glassmorphism Styles - Luxury Thin Borders */
 .glass-panel {
-  background: rgba(17, 17, 17, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(251, 191, 36, 0.15); /* Subtle gold border */
+  background: rgba(10, 12, 22, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(234, 179, 8, 0.15) !important; /* Reflective gold border */
   box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.8),
-    inset 0 1px 1px rgba(255, 255, 255, 0.02);
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
 }
 
 .glass-panel-glow {
-  background: rgba(8, 8, 8, 0.98);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(251, 191, 36, 0.4); /* Stronger gold border */
+  background: rgba(10, 12, 22, 0.8) !important;
+  backdrop-filter: blur(32px) !important;
+  -webkit-backdrop-filter: blur(32px) !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important; /* Stronger gold border */
   box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.9),
-    0 0 15px rgba(251, 191, 36, 0.05),
-    inset 0 1px 1px rgba(255, 255, 255, 0.04);
+    0 12px 40px 0 rgba(0, 0, 0, 0.55),
+    0 0 25px 0 rgba(234, 179, 8, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.04) !important;
 }
 
 .glass-input {
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: white;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: white !important;
+  backdrop-filter: blur(4px) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .glass-input:focus {
-  border-color: rgba(251, 191, 36, 0.5); /* Gold focus */
+  border-color: rgba(234, 179, 8, 0.45) !important; /* Gold focus */
   box-shadow: 
-    0 0 0 3px rgba(251, 191, 36, 0.15),
-    inset 0 1px 2px rgba(0, 0, 0, 0.8);
-  background: rgba(0, 0, 0, 0.85);
+    0 0 0 3px rgba(234, 179, 8, 0.12),
+    inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  background: rgba(0, 0, 0, 0.65) !important;
 }
 
 /* Animations and Hover Micro-effects */
