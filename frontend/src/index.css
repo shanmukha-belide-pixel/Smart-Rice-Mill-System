@@ -505,6 +505,50 @@ body, .bg-slate-950 {
   color: #334155 !important;
 }
 
+/* Customer Portal Container */
+.cp-container {
+  background: #0f172a;
+  border-color: rgba(30, 41, 59, 0.8);
+}
+[data-theme="light"] .cp-container {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Customer Portal Labels */
+.cp-label {
+  color: #94a3b8;
+}
+[data-theme="light"] .cp-label {
+  color: #475569 !important;
+}
+
+/* Customer Portal Text Headings */
+.cp-text-heading {
+  color: #e2e8f0;
+}
+[data-theme="light"] .cp-text-heading {
+  color: #1e293b !important;
+}
+
+/* Customer Portal Descriptions */
+.cp-text-desc {
+  color: #64748b;
+}
+[data-theme="light"] .cp-text-desc {
+  color: #475569 !important;
+}
+
+/* Phone number prefix +91 */
+.cp-phone-prefix {
+  color: #64748b;
+}
+[data-theme="light"] .cp-phone-prefix {
+  color: #334155 !important;
+}
+
+
 /* App name gradient — in light mode fall back to solid dark */
 .login-app-name {
   background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d97706 100%);

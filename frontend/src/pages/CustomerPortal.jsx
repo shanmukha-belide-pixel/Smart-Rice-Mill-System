@@ -199,12 +199,12 @@ export default function CustomerPortal({ backendUrl, language }) {
   }, [isVerified, tokenNumber]);
 
   return (
-    <div className="max-w-md mx-auto min-h-[500px] flex flex-col justify-between p-6 bg-slate-900 border border-slate-800/80 rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
+    <div className="max-w-md mx-auto min-h-[500px] flex flex-col justify-between p-6 cp-container border rounded-[2rem] shadow-2xl relative overflow-hidden my-4">
       {/* Decorative gradient overlay */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-850 pb-4 mb-4">
+      <div className="flex items-center justify-between border-b border-slate-850/60 pb-4 mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-xl bg-slate-950/60 border border-amber-800/30 flex items-center justify-center overflow-hidden shadow-inner">
             <img 
@@ -218,7 +218,7 @@ export default function CustomerPortal({ backendUrl, language }) {
             />
           </div>
           <div>
-            <h2 className="font-extrabold text-sm text-slate-100 uppercase tracking-wider">{t.appName}</h2>
+            <h2 className="font-extrabold text-sm cp-text-heading uppercase tracking-wider">{t.appName}</h2>
             <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase font-bold">{t.customerPortal}</span>
           </div>
         </div>
@@ -280,10 +280,10 @@ export default function CustomerPortal({ backendUrl, language }) {
               /* TRACK TOKEN FORM */
               <form onSubmit={handleTrackToken} className="space-y-4">
                 <div className="text-center space-y-1 pb-1">
-                  <h3 className="text-sm font-bold text-slate-350">
+                  <h3 className="text-sm font-bold cp-text-heading">
                     {language === 'te' ? 'టోకెన్ స్థితి శోధించండి' : 'Search Token Status'}
                   </h3>
-                  <p className="text-[11px] text-slate-500 leading-normal">
+                  <p className="text-[11px] cp-text-desc leading-normal">
                     {language === 'te' 
                       ? 'లైవ్ స్థితిని చూడడానికి మీ టోకెన్ నంబర్ నమోదు చేయండి.' 
                       : 'Enter token number to see live status.'}
@@ -291,14 +291,14 @@ export default function CustomerPortal({ backendUrl, language }) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">
+                  <label className="block text-xs font-semibold cp-label">
                     {language === 'te' ? 'టోకెన్ నంబర్' : 'Token Number'}
                   </label>
                   <input
                     type="text"
                     required
                     placeholder={language === 'te' ? 'ఉదా: T-005 లేదా 5' : 'e.g. T-005 or 5'}
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono tracking-widest uppercase"
+                    className="w-full login-form-input rounded-xl px-4 py-3 text-xs font-mono tracking-widest uppercase"
                     value={tokenNumber}
                     onChange={(e) => setTokenNumber(e.target.value)}
                   />
@@ -314,10 +314,10 @@ export default function CustomerPortal({ backendUrl, language }) {
               /* REGISTER TOKEN FORM */
               <form onSubmit={handleRegisterToken} className="space-y-4">
                 <div className="text-center space-y-1 pb-1">
-                  <h3 className="text-sm font-bold text-slate-350">
+                  <h3 className="text-sm font-bold cp-text-heading">
                     {language === 'te' ? 'కొత్త టోకెన్ కోసం నమోదు చేసుకోండి' : 'Register New Token'}
                   </h3>
-                  <p className="text-[11px] text-slate-500 leading-normal">
+                  <p className="text-[11px] cp-text-desc leading-normal">
                     {language === 'te' 
                       ? 'మీ పేరు మరియు మొబైల్ నంబర్ ఇచ్చి టోకెన్ జెనరేట్ చేయండి.' 
                       : 'Provide name & mobile number to generate a token.'}
@@ -325,31 +325,31 @@ export default function CustomerPortal({ backendUrl, language }) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">
+                  <label className="block text-xs font-semibold cp-label">
                     {language === 'te' ? 'మీ పేరు' : 'Your Name'}
                   </label>
                   <input
                     type="text"
                     required
                     placeholder={language === 'te' ? 'ఉదా: రామయ్య' : 'e.g. Ramaiah'}
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium placeholder:text-slate-700"
+                    className="w-full login-form-input rounded-xl px-4 py-3 text-xs placeholder:text-slate-600"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-400">
+                  <label className="block text-xs font-semibold cp-label">
                     {language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-3.5 text-xs text-slate-500 font-mono">+91</span>
+                    <span className="absolute left-4 top-3.5 text-xs cp-phone-prefix font-mono">+91</span>
                     <input 
                       type="tel" 
                       required 
                       placeholder="9876543210" 
                       pattern="[0-9]{10}"
-                      className="w-full bg-slate-950 border border-slate-850 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-mono"
+                      className="w-full login-form-input rounded-xl pl-12 pr-4 py-3 text-xs font-mono"
                       value={phoneNumber} 
                       onChange={(e) => setPhoneNumber(e.target.value)} 
                     />
@@ -369,7 +369,7 @@ export default function CustomerPortal({ backendUrl, language }) {
           <div className="space-y-5 text-center animate-fade-in">
             <div className="space-y-2">
               {tokenInfo.customer_name && (
-                <p className="text-[11px] text-amber-450 font-bold tracking-wide">
+                <p className="text-[11px] text-amber-500 font-bold tracking-wide">
                   👋 {language === 'te' ? 'నమస్కారం,' : 'Hello,'} {tokenInfo.customer_name}
                 </p>
               )}
@@ -413,9 +413,9 @@ export default function CustomerPortal({ backendUrl, language }) {
             </div>
 
             {/* Status messages depending on state */}
-            <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4 text-xs text-slate-400 font-semibold leading-relaxed">
+            <div className="bg-slate-955/40 border border-slate-850/60 rounded-2xl p-4 text-xs text-slate-400 font-semibold leading-relaxed">
               {tokenInfo.status === 'active' ? (
-                <span className="text-emerald-400 font-bold block animate-pulse">
+                <span className="text-emerald-450 font-bold block animate-pulse">
                   📍 {t.activeWaitStatus.replace('counter', tokenInfo.counter_assigned || 'Counter 1')}
                 </span>
               ) : tokenInfo.status === 'no_show' ? (
@@ -480,4 +480,3 @@ export default function CustomerPortal({ backendUrl, language }) {
     </div>
   );
 }
-
