@@ -541,98 +541,79 @@ export default function App() {
   // Unauthenticated Login Screen
   if (!token) {
     return (
-      <div className="min-h-screen login-page-root flex flex-col lg:flex-row relative overflow-hidden font-sans">
+      <div className="min-h-screen bg-slate-950 flex flex-col lg:flex-row relative overflow-hidden font-sans">
+        {/* Animated subtle backdrop circles */}
+        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-3xl animate-pulse-slow pointer-events-none" />
 
-        {/* === FULL PAGE BACKGROUND: Paddy Field Photo === */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
-            alt="Paddy Field"
-            className="w-full h-full object-cover select-none"
-            style={{opacity: 0.18}}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 login-page-overlay" />
-        </div>
-
-        {/* Floating ambient glows */}
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)'}} />
-        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] rounded-full pointer-events-none" style={{background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)'}} />
-
-        {/* Global switcher buttons — top right */}
+        {/* Global switcher buttons top right */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
           <button
             onClick={toggleLanguage}
-            className="login-top-btn flex items-center gap-1.5 backdrop-blur-xl text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border transition-all font-semibold shadow-xl cursor-pointer"
+            className="flex items-center gap-1.5 bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-xs px-4 py-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
           >
-            <Languages className="w-4 h-4 text-amber-400" />
+            <Languages className="w-4 h-4 text-emerald-400" />
             {language === 'te' ? 'English' : 'తెలుగు'}
           </button>
           <button
             onClick={toggleTheme}
-            className="login-top-btn flex items-center justify-center backdrop-blur-xl text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border transition-all shadow-xl cursor-pointer"
+            className="flex items-center justify-center bg-slate-900/60 backdrop-blur-md hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 p-2.5 rounded-2xl border border-slate-800/80 transition-all font-semibold shadow-xl cursor-pointer"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
           </button>
         </div>
 
-        {/* ============ LEFT COLUMN: Glass Sign-In Form ============ */}
-        <div className="w-full lg:w-[45%] flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 relative">
+        {/* LEFT COLUMN: Sign-In Form */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 z-10 bg-slate-950/65 backdrop-blur-lg">
           <div className="w-full max-w-md space-y-8 animate-fade-in">
 
-            {/* Mill Logo + Branding */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                {/* Original logo restored */}
-                <div className="login-logo-box w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border">
+            {/* Logo + Title */}
+            <div className="text-center lg:text-left space-y-3">
+              {/* Logo row — always visible */}
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-20 h-20 bg-slate-950/60 rounded-2xl border border-amber-800/40 shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                   <img
-                    src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
+                    src={`${import.meta.env.BASE_URL}tirumala_logo.png`}
                     alt="Sri Tirumala Rice Mill Logo"
                     className="w-full h-full object-cover select-none"
-                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`; }}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`;
+                    }}
                   />
                 </div>
                 <div>
-                  <h1 className="login-app-name text-2xl md:text-3xl font-black tracking-tight uppercase select-none">
+                  <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 uppercase select-none leading-tight">
                     {t.appName}
                   </h1>
-                  <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
-                    {language === 'te' ? 'స్మార్ట్ మిల్ మేనేజ్‌మెంట్ సిస్టమ్' : 'Smart Mill Management System'}
+                  <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-1 select-none">
+                    {language === 'te' ? 'క్యూ & ఇన్వెంటరీ మేనేజ్‌మెంట్ యాప్' : 'Queue & Inventory Management App'}
                   </p>
                 </div>
               </div>
-
-              {/* Decorative divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.3), transparent)'}} />
-                <span className="text-amber-600/60 text-sm">🌾</span>
-                <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.3), transparent)'}} />
-              </div>
             </div>
 
-            {/* === GLASS SIGN IN CARD === */}
-            <div className="login-glass-card relative rounded-[2rem] p-8 space-y-6 shadow-2xl">
-              {/* Top golden shimmer line */}
-              <div className="absolute inset-x-0 -top-px h-px rounded-t-[2rem]" style={{background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.5), transparent)'}} />
+            {/* Form Box */}
+            <div className="glass-panel p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-6 relative hover:border-amber-500/20 transition-colors duration-500">
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-700/40 to-transparent" />
 
-              {/* Language Tabs + Theme Toggle */}
+              {/* Language Tabs & Theme Toggle */}
               <div className="flex gap-2">
-                <div className="login-lang-switcher flex-1 flex p-1 rounded-2xl border">
+                <div className="flex-1 flex bg-slate-950 p-1 rounded-2xl border border-slate-850">
                   <button type="button" onClick={() => { setLanguage('te'); localStorage.setItem('language', 'te'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'login-lang-tab-active text-amber-500 border border-amber-800/40 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                    🌾 తెలుగు
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'te' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
+                    తెలుగు
                   </button>
                   <button type="button" onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en'); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'login-lang-tab-active text-amber-500 border border-amber-800/40 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
-                    🌾 English
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${language === 'en' ? 'bg-slate-900 text-amber-400 border border-slate-800 shadow-md' : 'text-slate-500 hover:text-slate-400'}`}>
+                    English
                   </button>
                 </div>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="login-card-btn p-2.5 rounded-2xl border text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer"
+                  className="bg-slate-950 p-2.5 rounded-2xl border border-slate-850 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-inner"
                   title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
                   {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-500" />}
@@ -646,10 +627,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* Sign In form */}
+              {/* Login form */}
               <>
-                <h2 className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  {language === 'te' ? '🔐 కన్సోల్ లాగిన్' : '🔐 Console Sign In'}
+                <h2 className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  {language === 'te' ? 'కన్సోల్ లాగిన్' : 'Console Sign In'}
                 </h2>
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
@@ -659,7 +640,7 @@ export default function App() {
                     <input
                       type="text" required
                       placeholder={language === 'te' ? 'యూజర్‌నేమ్ నమోదు చేయండి' : 'Enter username'}
-                      className="login-glass-input w-full rounded-xl px-4 py-3 text-sm font-medium"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-medium"
                       value={loginForm.username}
                       onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     />
@@ -671,7 +652,7 @@ export default function App() {
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"} required placeholder="••••••••"
-                        className="login-glass-input w-full rounded-xl pl-4 pr-11 py-3 text-sm font-mono"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 placeholder:text-slate-600 transition-all font-mono"
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                       />
@@ -685,76 +666,130 @@ export default function App() {
                     </div>
                   </div>
                   <button type="submit" disabled={loading}
-                    className="w-full disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider mt-3 cursor-pointer shadow-2xl"
-                    style={{background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #b45309 100%)', boxShadow: '0 4px 24px rgba(234,179,8,0.25)'}}>
-                    {loading ? (language === 'te' ? '⏳ ధృవీకరిస్తోంది...' : '⏳ Authenticating...') : (language === 'te' ? '🚀 ప్రవేశించు' : '🚀 Sign In')}
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 disabled:opacity-50 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider shadow-lg shadow-amber-950/30 mt-3 cursor-pointer">
+                    {loading ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Authenticating...') : (language === 'te' ? 'ప్రవేశించు' : 'Sign In')}
                   </button>
                 </form>
               </>
             </div>
 
-            {/* Quick Access Portals */}
+            {/* Quick Access to client portals */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-xs font-semibold pt-2">
               <button
                 onClick={() => setRole('public')}
-                className="text-slate-600 hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 📺 {language === 'te' ? 'పబ్లిక్ డిస్‌ప్లే టీవీ' : 'Open Public Display TV'}
               </button>
               <span className="text-slate-800 hidden sm:inline">|</span>
               <button
                 onClick={() => setRole('customer')}
-                className="text-slate-600 hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 📱 {language === 'te' ? 'కస్టమర్ మొబైల్ పోర్టల్' : 'Open Customer App'}
               </button>
             </div>
+
           </div>
         </div>
 
-        {/* ============ RIGHT COLUMN: Rice Mill Visual Panel ============ */}
-        <div className="hidden lg:flex lg:w-[55%] relative items-end justify-center overflow-hidden">
+        {/* RIGHT COLUMN: Visual Panel with rice mill images */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900/40 border-l border-slate-900 items-center justify-center p-12 overflow-hidden">
+          {/* Grid pattern background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35" />
 
-          {/* Full panel: rice grain image fills entire column */}
-          <div className="absolute inset-0">
+          {/* Subtle paddy field tint */}
+          <div className="absolute inset-0 overflow-hidden">
             <img
-              src={`${import.meta.env.BASE_URL}rice_grains_hero.png`}
-              alt="Premium Rice Grains"
+              src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
+              alt=""
               className="w-full h-full object-cover select-none"
-              style={{opacity: 0.85}}
-              onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}paddy_field_bg.png`; }}
+              style={{opacity: 0.08}}
+              onError={(e) => { e.target.style.display='none'; }}
             />
-            {/* Gradient overlay: left edge fades to match left column, bottom darkens for text legibility */}
-            <div className="absolute inset-0" style={{background: 'linear-gradient(90deg, rgba(6,8,19,0.9) 0%, rgba(6,8,19,0.2) 35%, rgba(6,8,19,0.1) 100%)'}} />
-            <div className="absolute inset-0" style={{background: 'linear-gradient(0deg, rgba(6,8,19,0.88) 0%, transparent 55%)'}} />
           </div>
 
-          {/* Info overlay at the bottom */}
-          <div className="relative z-10 w-full px-10 pb-14 space-y-5 animate-fade-in">
-            {/* Title & description */}
-            <div className="space-y-3">
-              <h3 className="login-panel-heading text-3xl font-black">
-                {language === 'te' ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్' : 'Modern Rice Mill Automation'}
+          <div className="relative z-10 w-full max-w-lg space-y-6 animate-fade-in">
+
+            {/* Top: Logo showcase */}
+            <div className="flex justify-center">
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 animate-pulse-slow" />
+                <div className="absolute inset-4 rounded-full border border-amber-600/10" />
+                <div className="w-36 h-36 rounded-full bg-slate-950/60 border border-amber-800/30 shadow-2xl overflow-hidden flex items-center justify-center p-2">
+                  <img
+                    src={`${import.meta.env.BASE_URL}tirumala_logo.png`}
+                    alt="Sri Tirumala Rice Mill"
+                    className="w-full h-full object-cover rounded-full select-none"
+                    onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}rice_grains_hero.png`; }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Image Gallery: 3 rice mill images side by side */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* Rice Harvest */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] border border-slate-800/60 shadow-lg group">
+                <img
+                  src={`${import.meta.env.BASE_URL}rice_harvest.png`}
+                  alt="Rice Harvest"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                  onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}paddy_field_bg.png`; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+                <span className="absolute bottom-2 left-0 right-0 text-center text-[9px] font-bold text-amber-300 uppercase tracking-widest">
+                  {language === 'te' ? 'పంట' : 'Harvest'}
+                </span>
+              </div>
+
+              {/* Weighing Scale */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] border border-slate-800/60 shadow-lg group mt-4">
+                <img
+                  src={`${import.meta.env.BASE_URL}weighing_scale.png`}
+                  alt="Rice Weighing"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                  onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}rice_grains_hero.png`; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+                <span className="absolute bottom-2 left-0 right-0 text-center text-[9px] font-bold text-amber-300 uppercase tracking-widest">
+                  {language === 'te' ? 'తూకం' : 'Weighing'}
+                </span>
+              </div>
+
+              {/* Machinery */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] border border-slate-800/60 shadow-lg group">
+                <img
+                  src={`${import.meta.env.BASE_URL}rice_mill_machinery.png`}
+                  alt="Rice Mill"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                  onError={(e) => { e.target.onerror = null; e.target.src = `${import.meta.env.BASE_URL}rice_grains_hero.png`; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+                <span className="absolute bottom-2 left-0 right-0 text-center text-[9px] font-bold text-amber-300 uppercase tracking-widest">
+                  {language === 'te' ? 'మిల్' : 'Mill'}
+                </span>
+              </div>
+            </div>
+
+            {/* Feature Text */}
+            <div className="space-y-3 text-center px-4">
+              <h3 className="text-lg font-bold text-slate-100">
+                {language === 'te' ? 'ఆధునిక రైస్ మిల్ ఆటోమేషన్ కన్సోల్' : 'Modern Rice Mill Automation Console'}
               </h3>
-              <p className="text-slate-300 text-sm leading-relaxed max-w-sm">
+              <p className="text-slate-400 text-xs leading-relaxed max-w-sm mx-auto">
                 {language === 'te'
-                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే స్మార్ట్ కన్సోల్‌లో నిర్వహించండి.'
-                  : 'Manage queues, warehouse stocks, real-time weighing tickets, and billing — all in one smart console.'}
+                  ? 'క్యూ మేనేజ్‌మెంట్, ఇన్వెంటరీ నిల్వలు, బిల్లింగ్ మరియు రియల్ టైమ్ విశ్లేషణలను ఒకే చోట నిర్వహించండి.'
+                  : 'Manage processing queues, warehouse stocks, real-time weighing tickets, and billing seamlessly.'}
               </p>
             </div>
 
-            {/* Glass feature pill tags */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { icon: '🌾', te: 'క్యూ మేనేజ్‌మెంట్', en: 'Queue Management' },
-                { icon: '📦', te: 'ఇన్వెంటరీ', en: 'Inventory' },
-                { icon: '📊', te: 'రియల్ టైమ్ రిపోర్ట్స్', en: 'Live Reports' },
-                { icon: '💳', te: 'బిల్లింగ్', en: 'Billing' },
-              ].map(f => (
-                <span key={f.en} className="login-tag-pill px-3.5 py-1.5 rounded-full text-xs font-semibold">
-                  {f.icon} {language === 'te' ? f.te : f.en}
-                </span>
-              ))}
+            {/* Feature Tags */}
+            <div className="flex flex-wrap justify-center gap-2">
+              <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">📋 {language === 'te' ? 'క్యూ మేనేజ్‌మెంట్' : 'Queue Management'}</span>
+              <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">📦 {language === 'te' ? 'ఇన్వెంటరీ' : 'Inventory'}</span>
+              <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">📊 {language === 'te' ? 'అనలిటిక్స్' : 'Analytics'}</span>
+              <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-400">💳 {language === 'te' ? 'బిల్లింగ్' : 'Billing'}</span>
             </div>
           </div>
         </div>
@@ -764,6 +799,7 @@ export default function App() {
     );
   }
 
+        {/* === FULL PAGE BACKGROUND: Paddy Field Photo === */}
 
   // Role permissions checking
   const canAccessTab = (tab) => {
@@ -777,6 +813,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-between font-sans relative overflow-hidden">
+      {/* Rice field ambient background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <img
+          src={`${import.meta.env.BASE_URL}paddy_field_bg.png`}
+          alt=""
+          className="w-full h-full object-cover select-none"
+          style={{opacity: 0.04}}
+          onError={(e) => { e.target.style.display='none'; }}
+        />
+      </div>
       {/* Decorative blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -784,14 +830,14 @@ export default function App() {
       {/* App Header */}
       <header className="bg-slate-900/40 backdrop-blur-md border-b border-slate-900/80 px-6 py-4 flex justify-between items-center z-20">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center p-1 overflow-hidden shadow-inner">
+          <div className="w-12 h-12 rounded-xl bg-slate-950/60 border border-amber-800/30 flex items-center justify-center overflow-hidden shadow-inner">
             <img 
-              src={`${import.meta.env.BASE_URL}login_illustration.png`} 
+              src={`${import.meta.env.BASE_URL}tirumala_logo.png`} 
               alt="Sri Tirumala Rice Mill Logo" 
-              className="w-full h-full object-contain rounded-lg"
+              className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600";
+                e.target.src = `${import.meta.env.BASE_URL}login_illustration.png`;
               }}
             />
           </div>
