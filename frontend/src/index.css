@@ -255,6 +255,14 @@ body, .bg-slate-950 {
   background: #eef2f7 !important;
 }
 
+/* Right panel */
+.login-right-panel {
+  background: rgba(2, 6, 23, 0.55);
+}
+[data-theme="light"] .login-right-panel {
+  background: rgba(220, 230, 245, 0.60) !important;
+}
+
 /* Top-right switcher buttons */
 .login-top-btn {
   background: rgba(10, 12, 22, 0.7);
@@ -395,6 +403,106 @@ body, .bg-slate-950 {
 }
 [data-theme="light"] .login-page-overlay {
   background: linear-gradient(135deg, rgba(238,242,247,0.97) 0%, rgba(238,242,247,0.8) 50%, rgba(238,242,247,0.92) 100%) !important;
+}
+
+/* Full-page background image dark vignette overlay */
+.login-bg-overlay {
+  background: linear-gradient(135deg, rgba(2,6,23,0.93) 0%, rgba(2,6,23,0.75) 40%, rgba(2,6,23,0.60) 100%);
+}
+[data-theme="light"] .login-bg-overlay {
+  background: linear-gradient(135deg, rgba(240,245,255,0.90) 0%, rgba(240,245,255,0.70) 40%, rgba(240,245,255,0.55) 100%) !important;
+}
+
+/* Full-page background bottom fade */
+.login-bg-bottom-fade {
+  background: linear-gradient(0deg, rgba(2,6,23,0.95) 0%, transparent 40%);
+}
+[data-theme="light"] .login-bg-bottom-fade {
+  background: linear-gradient(0deg, rgba(240,245,255,0.95) 0%, transparent 40%) !important;
+}
+
+/* Left column frosted glass backing */
+.login-left-glass {
+  background: rgba(2, 6, 23, 0.60);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+[data-theme="light"] .login-left-glass {
+  background: rgba(245, 248, 255, 0.72) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Right panel dark tint */
+.login-right-tint {
+  background: rgba(2, 6, 23, 0.38);
+}
+[data-theme="light"] .login-right-tint {
+  background: rgba(245, 248, 255, 0.38) !important;
+}
+
+/* Form inputs */
+.login-form-input {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-form-input::placeholder { color: #475569; }
+.login-form-input:focus {
+  outline: none;
+  border-color: rgba(234, 179, 8, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.10) !important;
+}
+[data-theme="light"] .login-form-input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .login-form-input::placeholder { color: #94a3b8 !important; }
+[data-theme="light"] .login-form-input:focus {
+  border-color: rgba(234, 179, 8, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.13) !important;
+}
+
+/* Lang switcher strip inside form */
+.login-lang-strip {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+[data-theme="light"] .login-lang-strip {
+  background: rgba(241, 245, 249, 0.95) !important;
+  border-color: rgba(203, 213, 225, 0.8) !important;
+}
+
+/* Active lang tab */
+.login-lang-active {
+  background: rgba(15, 18, 35, 0.9);
+}
+[data-theme="light"] .login-lang-active {
+  background: rgba(255, 255, 255, 1.0) !important;
+}
+
+/* Theme toggle inside card */
+.login-theme-btn {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+[data-theme="light"] .login-theme-btn {
+  background: rgba(241, 245, 249, 0.95) !important;
+  border-color: rgba(203, 213, 225, 0.8) !important;
+}
+
+/* Top-right switcher buttons */
+.login-switcher-btn {
+  background: rgba(2, 6, 23, 0.70);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #cbd5e1;
+}
+[data-theme="light"] .login-switcher-btn {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  color: #334155 !important;
 }
 
 /* App name gradient — in light mode fall back to solid dark */
