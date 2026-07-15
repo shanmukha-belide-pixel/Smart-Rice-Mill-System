@@ -607,7 +607,7 @@ export default function Reports({ backendUrl, userToken, language }) {
           <div className="overflow-x-auto w-full">
             <div className="h-64 min-w-[600px] md:min-w-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trends.weekly_revenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={trends.weekly_revenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRevBar" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#10b981" stopOpacity={0.95}/>
@@ -719,7 +719,7 @@ export default function Reports({ backendUrl, userToken, language }) {
           <div className="overflow-x-auto w-full">
             <div className="h-56 min-w-[600px] md:min-w-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trends.peak_hours} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <BarChart data={trends.peak_hours} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
                   <XAxis dataKey="hour" stroke="#475569" fontSize={9} tickLine={false} />
                   <YAxis stroke="#475569" fontSize={9} tickLine={false} />
