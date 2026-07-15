@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { Calendar, IndianRupee, Users, ShoppingBag, Download, ArrowUpRight, TrendingUp, Clock } from 'lucide-react';
 import { translations } from '../utils/translations';
@@ -11,6 +11,9 @@ export default function Reports({ backendUrl, userToken, language }) {
   const [exporting, setExporting] = useState(null); // 'pdf' or 'excel'
 
   const t = translations[language || 'te'];
+
+  // Keep a stable ref so WebSocket closures always call the latest fetchReports
+  const fetchReportsRef = useRef(null);
 
   const fetchReports = async () => {
     try {
@@ -51,12 +54,20 @@ export default function Reports({ backendUrl, userToken, language }) {
     }
   };
 
+  // Always keep ref pointing at the latest version
+  fetchReportsRef.current = fetchReports;
+
   useEffect(() => {
-    fetchReports();
+    fetchReportsRef.current();
+
+    // --- Polling fallback every 60 seconds so graphs stay fresh even without WS ---
+    const pollInterval = setInterval(() => {
+      fetchReportsRef.current();
+    }, 60000);
 
     const handleStorageChange = (e) => {
       if (e.key === 'ricemill_sales' || e.key === 'ricemill_tokens' || e.key === 'ricemill_stock') {
-        fetchReports();
+        fetchReportsRef.current();
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -66,19 +77,26 @@ export default function Reports({ backendUrl, userToken, language }) {
     const wsUrl = `${wsProto}//${cleanHost}/api/ws/queue`;
 
     let socket;
+    let destroyed = false;
     function connect() {
+      if (destroyed) return;
       socket = new WebSocket(wsUrl);
       socket.onmessage = (e) => {
+        // Use ref so we always call the latest fetchReports, not a stale closure
         if (e.data === 'REFRESH_QUEUE' || e.data === 'REFRESH_REPORTS' || e.data === 'REFRESH_STOCK') {
-          fetchReports();
+          fetchReportsRef.current();
         }
       };
-      socket.onclose = () => setTimeout(connect, 3000);
+      socket.onclose = () => {
+        if (!destroyed) setTimeout(connect, 3000);
+      };
     }
     
     connect();
     return () => {
+      destroyed = true;
       window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
       if (socket) socket.close();
     };
   }, [backendUrl]);

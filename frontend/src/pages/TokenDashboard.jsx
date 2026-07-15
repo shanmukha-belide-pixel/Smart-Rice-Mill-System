@@ -138,19 +138,26 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
     window.speechSynthesis.speak(utteranceEn);
   };
 
+  // Keep a stable ref to fetchData so WebSocket closures always call the latest version
+  const fetchDataRef = useRef(null);
+
   // Fetch tokens and stock
   const fetchData = async () => {
     try {
       const timestamp = Date.now();
-      // Get tokens
-      const tokenRes = await fetch(`${backendUrl}/api/tokens?_t=${timestamp}`);
+      // Get tokens (with auth header)
+      const tokenRes = await fetch(`${backendUrl}/api/tokens?_t=${timestamp}`, {
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      });
       if (tokenRes.ok) {
         const tokenData = await tokenRes.json();
         setTokens(tokenData);
       }
       
       // Get stock for dropdown
-      const stockRes = await fetch(`${backendUrl}/api/stock?_t=${timestamp}`);
+      const stockRes = await fetch(`${backendUrl}/api/stock?_t=${timestamp}`, {
+        headers: { 'Authorization': `Bearer ${userToken}` }
+      });
       if (stockRes.ok) {
         const stockData = await stockRes.json();
         setStockVarieties(stockData);
@@ -163,13 +170,21 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
     }
   };
 
-  // Connect WebSockets and Storage events for live sync
+  // Always keep the ref pointing at the latest fetchData
+  fetchDataRef.current = fetchData;
+
+  // Connect WebSockets, polling fallback, and storage events for live sync
   useEffect(() => {
-    fetchData();
+    fetchDataRef.current();
+
+    // --- Polling fallback every 30 seconds (keeps working when WS drops) ---
+    const pollInterval = setInterval(() => {
+      fetchDataRef.current();
+    }, 30000);
 
     const handleStorageChange = (e) => {
       if (e.key === 'ricemill_tokens' || e.key === 'ricemill_stock') {
-        fetchData();
+        fetchDataRef.current();
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -180,7 +195,9 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
 
     let socket;
     let pingInterval;
+    let destroyed = false;
     function connect() {
+      if (destroyed) return;
       socket = new WebSocket(wsUrl);
       socket.onopen = () => {
         // Ping every 30 seconds to keep connection alive on Render
@@ -191,19 +208,22 @@ export default function TokenDashboard({ backendUrl, userToken, role, language, 
         }, 30000);
       };
       socket.onmessage = (e) => {
+        // Use ref so we always call the latest fetchData, not a stale closure
         if (e.data === 'REFRESH_QUEUE') {
-          fetchData();
+          fetchDataRef.current();
         }
       };
       socket.onclose = () => {
         if (pingInterval) clearInterval(pingInterval);
-        setTimeout(connect, 3000);
+        if (!destroyed) setTimeout(connect, 3000);
       };
     }
     
     connect();
     return () => {
+      destroyed = true;
       window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
       if (pingInterval) clearInterval(pingInterval);
       if (socket) socket.close();
     };
