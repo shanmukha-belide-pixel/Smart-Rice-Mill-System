@@ -878,12 +878,19 @@ def get_trends(db: Session = Depends(get_db), current_user: User = Depends(get_c
         for row in reversed(daily_sales):
             try:
                 date_obj = datetime.datetime.strptime(row.sales_date, "%Y-%m-%d")
-                day_label = date_obj.strftime("%a") # e.g. Mon, Tue
+                # Use "Tue 8" format so two different Tuesdays are visually distinct
+                day_label = date_obj.strftime("%a %-d")
             except Exception:
-                day_label = row.sales_date
+                try:
+                    # Windows fallback: strftime("%-d") not supported, use alternative
+                    date_obj = datetime.datetime.strptime(row.sales_date, "%Y-%m-%d")
+                    day_label = date_obj.strftime("%a") + " " + str(date_obj.day)
+                except Exception:
+                    day_label = row.sales_date
             
             weekly_revenue.append({
                 "day": day_label,
+                "date": row.sales_date,
                 "revenue": float(row.revenue or 0.0),
                 "tokens": int(row.tokens or 0)
             })

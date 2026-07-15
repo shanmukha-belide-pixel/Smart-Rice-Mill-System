@@ -490,13 +490,16 @@ export default function Reports({ backendUrl, userToken, language }) {
 
       {/* Daily Highlights Summary Box */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {/* Rev */}
+        {/* Rev - Today only */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-800/85 shadow-lg flex items-center justify-between hover-scale">
           <div className="space-y-2">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">{t.totalRevenue}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{t.totalRevenue}</span>
+              <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase">{language === 'te' ? 'ఈరోజు' : 'Today'}</span>
+            </div>
             <h3 className="text-2xl font-extrabold text-slate-100 font-mono">₹{dailyData.total_revenue.toLocaleString('en-IN')}</h3>
-            <span className="text-[9px] text-emerald-400 font-bold flex items-center gap-0.5">
-              <ArrowUpRight className="w-3.5 h-3.5" /> +12.4% {language === 'te' ? 'గత వారం కంటే ఎక్కువ' : 'vs last week'}
+            <span className="text-[9px] text-slate-500 font-bold flex items-center gap-0.5">
+              {dailyData.date}
             </span>
           </div>
           <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/10">
@@ -582,12 +585,17 @@ export default function Reports({ backendUrl, userToken, language }) {
       {/* Main Charts & Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Weekly Revenue Line Chart */}
+        {/* Weekly Revenue Bar Chart */}
         <div className="lg:col-span-2 glass-panel p-6 rounded-3xl border border-slate-800/80 shadow-xl space-y-4 relative">
           <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent" />
-          <div>
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-200">{t.weeklyRevenueTrend}</h3>
-            <p className="text-[10px] text-slate-500 font-mono">{language === 'te' ? 'గత 7 పని దినాలలో మిల్ అమ్మకాల సారాంశం' : 'Overview of mill checkouts over the last 7 active days'}</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-200">{t.weeklyRevenueTrend}</h3>
+              <p className="text-[10px] text-slate-500 font-mono">{language === 'te' ? 'గత 7 పని దినాలలో మిల్ అమ్మకాల సారాంశం' : 'Overview of mill checkouts over the last 7 active days'}</p>
+            </div>
+            <span className="text-[9px] bg-slate-900 border border-slate-800 text-slate-500 px-2 py-1 rounded-lg font-mono">
+              {trends.weekly_revenue.length} {language === 'te' ? 'రోజులు' : 'days'}
+            </span>
           </div>
           
           <div className="overflow-x-auto w-full">
@@ -605,9 +613,17 @@ export default function Reports({ backendUrl, userToken, language }) {
                   <YAxis stroke="#475569" fontSize={10} tickLine={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
-                    labelStyle={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: 'bold' }}
                     itemStyle={{ color: '#10b981', fontSize: '11px' }}
                     cursor={{ fill: 'rgba(16, 185, 129, 0.05)', radius: 6 }}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload[0] && payload[0].payload.date) {
+                        const d = new Date(payload[0].payload.date);
+                        return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                      }
+                      return label;
+                    }}
+                    formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, language === 'te' ? 'రాబడి' : 'Revenue']}
                   />
                   <Bar 
                     dataKey="revenue" 
