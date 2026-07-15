@@ -9,6 +9,8 @@ export default function Reports({ backendUrl, userToken, language }) {
   const [stock, setStock] = useState([]);
   const [customerSales, setCustomerSales] = useState([]);
   const [exporting, setExporting] = useState(null); // 'pdf' or 'excel'
+  const [fetchError, setFetchError] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const t = translations[language || 'te'];
 
@@ -16,13 +18,17 @@ export default function Reports({ backendUrl, userToken, language }) {
   const fetchReportsRef = useRef(null);
 
   const fetchReports = async () => {
+    setIsRefreshing(true);
     try {
+      let anySuccess = false;
+
       const dailyRes = await fetch(`${backendUrl}/api/reports/daily?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${userToken}` }
       });
       if (dailyRes.ok) {
         const dData = await dailyRes.json();
         setDailyData(dData);
+        anySuccess = true;
       }
 
       const trendsRes = await fetch(`${backendUrl}/api/reports/trends?_t=${Date.now()}`, {
@@ -31,6 +37,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       if (trendsRes.ok) {
         const tData = await trendsRes.json();
         setTrends(tData);
+        anySuccess = true;
       }
 
       const stockRes = await fetch(`${backendUrl}/api/stock?_t=${Date.now()}`, {
@@ -49,8 +56,13 @@ export default function Reports({ backendUrl, userToken, language }) {
         const cData = await custRes.json();
         setCustomerSales(cData.records || []);
       }
+
+      if (anySuccess) setFetchError(false);
     } catch (err) {
       console.error(err);
+      setFetchError(true);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -58,6 +70,7 @@ export default function Reports({ backendUrl, userToken, language }) {
   fetchReportsRef.current = fetchReports;
 
   useEffect(() => {
+    if (!userToken) return; // wait until token is available
     fetchReportsRef.current();
 
     // --- Polling fallback every 60 seconds so graphs stay fresh even without WS ---
@@ -99,7 +112,7 @@ export default function Reports({ backendUrl, userToken, language }) {
       clearInterval(pollInterval);
       if (socket) socket.close();
     };
-  }, [backendUrl]);
+  }, [backendUrl, userToken]);
 
   const totalInventoryValue = (stock || []).reduce((sum, item) => {
     const qty = parseFloat(item.quantity_kg) || 0;
@@ -413,8 +426,23 @@ export default function Reports({ backendUrl, userToken, language }) {
   if (!dailyData || !trends) {
     return (
       <div className="py-12 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 border-2 border-slate-800 border-t-emerald-500 rounded-full animate-spin" />
-        <span>{language === 'te' ? 'ఆర్థిక నివేదికలను లోడ్ చేస్తోంది...' : 'Loading financial analytics...'}</span>
+        {fetchError ? (
+          <>
+            <span className="text-rose-400 font-bold text-sm">⚠️ {language === 'te' ? 'డేటా లోడ్ కాలేదు' : 'Failed to load data'}</span>
+            <span className="text-slate-500">{language === 'te' ? 'బ్యాకెండ్ వేక్ అప్ అవుతోంది, దయచేసి వేచి ఉండండి...' : 'Backend may be waking up (Render cold start). Please wait...'}</span>
+            <button
+              onClick={() => fetchReportsRef.current()}
+              className="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              🔄 {language === 'te' ? 'మళ్లీ ప్రయత్నించు' : 'Retry'}
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 border-2 border-slate-800 border-t-emerald-500 rounded-full animate-spin" />
+            <span>{language === 'te' ? 'ఆర్థిక నివేదికలను లోడ్ చేస్తోంది...' : 'Loading financial analytics...'}</span>
+          </>
+        )}
       </div>
     );
   }
@@ -433,6 +461,14 @@ export default function Reports({ backendUrl, userToken, language }) {
         </div>
         
         <div className="flex gap-2">
+          <button
+            onClick={() => fetchReportsRef.current()}
+            disabled={isRefreshing}
+            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-slate-355 hover:text-emerald-400 py-3 px-3 h-11 rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
+            title="Refresh data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
           <button
             onClick={() => triggerExport('excel')}
             disabled={exporting !== null}
