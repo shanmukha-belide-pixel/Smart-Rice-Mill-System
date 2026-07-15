@@ -36,6 +36,12 @@ export default function Reports({ backendUrl, userToken, language }) {
       });
       if (trendsRes.ok) {
         const tData = await trendsRes.json();
+        if (tData && tData.weekly_revenue) {
+          tData.weekly_revenue = tData.weekly_revenue.map((item, idx) => ({
+            ...item,
+            uniqueKey: item.date || `${item.day}-${idx}`
+          }));
+        }
         setTrends(tData);
         anySuccess = true;
       }
@@ -609,7 +615,16 @@ export default function Reports({ backendUrl, userToken, language }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                  <XAxis dataKey="day" stroke="#475569" fontSize={10} tickLine={false} />
+                  <XAxis 
+                    dataKey="uniqueKey" 
+                    stroke="#475569" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    tickFormatter={(value) => {
+                      const item = trends.weekly_revenue.find(d => d.uniqueKey === value);
+                      return item ? item.day : value;
+                    }}
+                  />
                   <YAxis stroke="#475569" fontSize={10} tickLine={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '12px' }}
@@ -617,9 +632,13 @@ export default function Reports({ backendUrl, userToken, language }) {
                     itemStyle={{ color: '#10b981', fontSize: '11px' }}
                     cursor={{ fill: 'rgba(16, 185, 129, 0.05)', radius: 6 }}
                     labelFormatter={(label, payload) => {
-                      if (payload && payload[0] && payload[0].payload.date) {
-                        const d = new Date(payload[0].payload.date);
-                        return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                      if (payload && payload[0] && payload[0].payload) {
+                        const dateStr = payload[0].payload.date;
+                        if (dateStr) {
+                          const d = new Date(dateStr);
+                          return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                        }
+                        return payload[0].payload.day;
                       }
                       return label;
                     }}
